@@ -82,6 +82,20 @@ func (d *data) writeTo(w *tar.Writer, path string) error {
 	return err
 }
 
+type link struct {
+	tar.Header
+}
+
+func (l *link) add(parent *directory) {
+	parent.children = append(parent.children, l)
+}
+
+func (l *link) writeTo(w *tar.Writer, path string) error {
+	l.Header.Name = filepath.Join(path, l.Header.Name)
+
+	return w.WriteHeader(&l.Header)
+}
+
 type child interface {
 	add(*directory)
 	writeTo(*tar.Writer, string) error
@@ -165,6 +179,25 @@ func file(name string, contents string, opts ...option) *data {
 	}
 
 	return file
+}
+
+func symlink(name string, target string, opts ...option) *link {
+	symlink := &link{
+		Header: tar.Header{
+			Name:     name,
+			Typeflag: tar.TypeReg,
+			Mode:     0o555,
+			ModTime:  time.Now(),
+			Linkname: target,
+			Format:   tar.FormatGNU,
+		},
+	}
+
+	for _, opt := range opts {
+		opt(&symlink.Header)
+	}
+
+	return symlink
 }
 
 func TestGetStats(t *testing.T) {
