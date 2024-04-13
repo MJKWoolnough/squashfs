@@ -167,6 +167,27 @@ func file(name string, contents string, opts ...option) *data {
 	return file
 }
 
-func TestLoad(t *testing.T) {
+func TestGetStats(t *testing.T) {
 	checkSQFSTar(t)
+
+	sqfs, err := buildSquashFS(
+		t,
+		dir("dirA", []child{
+			file("fileA", "my contents"),
+		}),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error creating squashfs file: %s", err)
+	}
+
+	f, err := os.Open(sqfs)
+	if err != nil {
+		t.Fatalf("unexpected error opening squashfs file: %s", err)
+	}
+	defer f.Close()
+
+	_, err = GetStats(f)
+	if err != nil {
+		t.Fatalf("unexpected error reading squashfs file: %s", err)
+	}
 }
