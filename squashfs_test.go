@@ -104,6 +104,8 @@ type child interface {
 func buildSquashFS(t *testing.T, children ...child) (string, error) {
 	t.Helper()
 
+	checkSQFSTar(t)
+
 	pr, pw := io.Pipe()
 	ch := make(chan error, 1)
 
@@ -201,8 +203,6 @@ func symlink(name string, target string, opts ...option) *link {
 }
 
 func TestGetStats(t *testing.T) {
-	checkSQFSTar(t)
-
 	sqfs, err := buildSquashFS(
 		t,
 		dir("dirA", []child{
