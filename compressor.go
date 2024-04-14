@@ -158,8 +158,25 @@ func defaultXZOptions() *XZOptions {
 	}
 }
 
-func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (any, error) {
-	return nil, nil
+type LZ4Options struct {
+	Version uint32
+	Flags   uint32
+}
+
+func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (*LZ4Options, error) {
+	if ler.ReadUint32() != 1 {
+		return nil, ErrInvalidCompressorVersion
+	}
+
+	flags := ler.ReadUint32()
+	if flags > 1 {
+		return nil, ErrInvalidCompressorFlags
+	}
+
+	return &LZ4Options{
+		Version: 1,
+		Flags:   flags,
+	}, nil
 }
 
 func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
@@ -187,4 +204,6 @@ const (
 	ErrInvalidCompressionAlgorithm  = errors.Error("invalid compression algorithm")
 	ErrInvalidDictionarySize        = errors.Error("invalid dictionary size")
 	ErrInvalidFilters               = errors.Error("invalid filters")
+	ErrInvalidCompressorVersion     = errors.Error("invalid compressor version")
+	ErrInvalidCompressorFlags       = errors.Error("invalid compressor flags")
 )
