@@ -179,12 +179,25 @@ func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (*LZ4Options, error) 
 	}, nil
 }
 
-func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
-	return nil, nil
+type ZStdOptions struct {
+	CompressionLevel uint32
 }
 
-func defaultZStdOptions() any {
-	return nil
+func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (*ZStdOptions, error) {
+	compressionlevel := ler.ReadUint32()
+	if compressionlevel == 0 || compressionlevel > 22 {
+		return nil, ErrInvalidCompressionLevel
+	}
+
+	return &ZStdOptions{
+		CompressionLevel: compressionlevel,
+	}, nil
+}
+
+func defaultZStdOptions() *ZStdOptions {
+	return &ZStdOptions{
+		CompressionLevel: 15,
+	}
 }
 
 const (
