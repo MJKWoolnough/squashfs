@@ -49,7 +49,29 @@ type Stats struct {
 	BytesUsed  uint64
 }
 
+type superblock struct {
+	Stats
+	IDCount            uint16
+	RootInode          uint64
+	IDTable            uint64
+	XattrTable         uint64
+	InodeTable         uint64
+	DirTable           uint64
+	FragTable          uint64
+	ExportTable        uint64
+	compressionOptions [4]byte
+}
+
 func GetStats(r io.Reader) (*Stats, error) {
+	sb, err := readSuperBlock(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sb.Stats, nil
+}
+
+func readSuperBlock(r io.Reader) (*superblock, error) {
 	var buf [104]byte
 
 	_, err := io.ReadFull(r, buf[:])
@@ -80,28 +102,44 @@ func GetStats(r io.Reader) (*Stats, error) {
 	}
 
 	flags := ler.ReadUint16()
-	ler.ReadUint16() // id count
+	idcount := ler.ReadUint16()
 
 	if ler.ReadUint16() != 4 || ler.ReadUint16() != 0 {
 		return nil, ErrInvalidVersion
 	}
 
-	ler.ReadUint64() // root inode
+	rootinode := ler.ReadUint64()
 	bytesused := ler.ReadUint64()
-	ler.ReadUint64() // xattr table
-	ler.ReadUint64() // inode table
-	ler.ReadUint64() // dir table
-	ler.ReadUint64() // frag table
-	ler.ReadUint64() // export table
+	xattrtable := ler.ReadUint64()
+	inodetable := ler.ReadUint64()
+	dirtable := ler.ReadUint64()
+	fragtable := ler.ReadUint64()
+	exporttable := ler.ReadUint64()
 
-	return &Stats{
-		Inodes:     inodes,
-		ModTime:    time.Unix(int64(modtime), 0),
-		BlockSize:  blocksize,
-		FragCount:  fragcount,
-		Compressor: Compressor(compressor),
-		Flags:      flags,
-		BytesUsed:  bytesused,
+	var compressionOptions [4]byte
+
+	if flags&0x400 != 0 {
+		copy(compressionOptions[:], buf[100:])
+	}
+
+	return &superblock{
+		Stats: Stats{
+			Inodes:     inodes,
+			ModTime:    time.Unix(int64(modtime), 0),
+			BlockSize:  blocksize,
+			FragCount:  fragcount,
+			Compressor: Compressor(compressor),
+			Flags:      flags,
+			BytesUsed:  bytesused,
+		},
+		IDCount:            idcount,
+		RootInode:          rootinode,
+		XattrTable:         xattrtable,
+		InodeTable:         inodetable,
+		DirTable:           dirtable,
+		FragTable:          fragtable,
+		ExportTable:        exporttable,
+		compressionOptions: compressionOptions,
 	}, nil
 }
 
