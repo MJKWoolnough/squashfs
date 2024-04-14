@@ -37,7 +37,7 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 			return defaultGzipOptions(), nil
 		}
 	case CompressorLZMA:
-		return parseLZMAOptions(ler)
+		return nil, ErrNoCompressorOptions
 	case CompressorLZO:
 		if hasOptionsFlag {
 			return parseLZOOptions(ler)
@@ -99,10 +99,6 @@ func defaultGzipOptions() *GZipOptions {
 	}
 }
 
-func parseLZMAOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
-	return nil, nil
-}
-
 func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
 	return nil, nil
 }
@@ -144,4 +140,5 @@ const (
 	ErrInvalidCompressionLevel      = errors.Error("invalid compression level")
 	ErrInvalidWindowSize            = errors.Error("invalid window size")
 	ErrInvalidCompressionStrategies = errors.Error("invalid compression strategies")
+	ErrNoCompressorOptions          = errors.Error("no compressor options should be supplied")
 )
