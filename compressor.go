@@ -1,6 +1,8 @@
 package squashfs
 
 import (
+	"math/bits"
+
 	"vimagination.zapto.org/byteio"
 	"vimagination.zapto.org/errors"
 )
@@ -128,12 +130,32 @@ func defaultLZOOptions() *LZOOptions {
 	}
 }
 
-func parseXZOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
-	return nil, nil
+type XZOptions struct {
+	DictionarySize uint32
+	Filters        uint32
 }
 
-func defaultXZOptions() any {
-	return nil
+func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
+	dictionarysize := ler.ReadUint32()
+	if lead, trail := bits.LeadingZeros32(dictionarysize), bits.TrailingZeros32(dictionarysize); dictionarysize < 8192 || 32-trail-lead > 2 {
+		return nil, ErrInvalidDictionarySize
+	}
+
+	filters := ler.ReadUint32()
+	if filters > 63 {
+		return nil, ErrInvalidFilters
+	}
+
+	return &XZOptions{
+		DictionarySize: dictionarysize,
+		Filters:        filters,
+	}, nil
+}
+
+func defaultXZOptions() *XZOptions {
+	return &XZOptions{
+		DictionarySize: 8192,
+	}
 }
 
 func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (any, error) {
@@ -163,4 +185,6 @@ const (
 	ErrInvalidCompressionStrategies = errors.Error("invalid compression strategies")
 	ErrNoCompressorOptions          = errors.Error("no compressor options should be supplied")
 	ErrInvalidCompressionAlgorithm  = errors.Error("invalid compression algorithm")
+	ErrInvalidDictionarySize        = errors.Error("invalid dictionary size")
+	ErrInvalidFilters               = errors.Error("invalid filters")
 )
