@@ -34,7 +34,7 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 		if hasOptionsFlag {
 			return parseGZipOptions(ler)
 		} else {
-			return defaultGzipOptions()
+			return defaultGzipOptions(), nil
 		}
 	case CompressorLZMA:
 		return parseLZMAOptions(ler)
@@ -42,13 +42,13 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 		if hasOptionsFlag {
 			return parseLZOOptions(ler)
 		} else {
-			return defaultLZOOptions()
+			return defaultLZOOptions(), nil
 		}
 	case CompressorXZ:
 		if hasOptionsFlag {
 			return parseXZOptions(ler)
 		} else {
-			return defaultXZOptions()
+			return defaultXZOptions(), nil
 		}
 	case CompressorLZ4:
 		return parseLZ4Options(ler)
@@ -56,7 +56,7 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 		if hasOptionsFlag {
 			return parseZStdOptions(ler)
 		} else {
-			return defaultZStdOptions()
+			return defaultZStdOptions(), nil
 		}
 	}
 
@@ -92,11 +92,11 @@ func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error
 	}, nil
 }
 
-func defaultGzipOptions() (*GZipOptions, error) {
+func defaultGzipOptions() *GZipOptions {
 	return &GZipOptions{
 		CompressionLevel: 9,
 		WindowSize:       15,
-	}, nil
+	}
 }
 
 func parseLZMAOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
@@ -107,16 +107,16 @@ func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
 	return nil, nil
 }
 
-func defaultLZOOptions() (any, error) {
-	return nil, nil
+func defaultLZOOptions() any {
+	return nil
 }
 
 func parseXZOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
 	return nil, nil
 }
 
-func defaultXZOptions() (any, error) {
-	return nil, nil
+func defaultXZOptions() any {
+	return nil
 }
 
 func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (any, error) {
@@ -127,8 +127,8 @@ func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
 	return nil, nil
 }
 
-func defaultZStdOptions() (any, error) {
-	return nil, nil
+func defaultZStdOptions() any {
+	return nil
 }
 
 const (
