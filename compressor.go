@@ -1,6 +1,9 @@
 package squashfs
 
-import "vimagination.zapto.org/byteio"
+import (
+	"vimagination.zapto.org/byteio"
+	"vimagination.zapto.org/errors"
+)
 
 type Compressor uint16
 
@@ -60,12 +63,40 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 	return nil, ErrInvalidCompressor
 }
 
-func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
-	return nil, nil
+type GZipOptions struct {
+	CompressionLevel uint32
+	WindowSize       uint16
+	Strategies       uint16
 }
 
-func defaultGzipOptions() (any, error) {
-	return nil, nil
+func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error) {
+	compressionlevel := ler.ReadUint32()
+	if compressionlevel == 0 || compressionlevel > 9 {
+		return nil, ErrInvalidCompressionLevel
+	}
+
+	windowsize := ler.ReadUint16()
+	if windowsize < 8 || windowsize > 15 {
+		return nil, ErrInvalidWindowSize
+	}
+
+	strategies := ler.ReadUint16()
+	if strategies > 31 {
+		return nil, ErrInvalidCompressionStrategies
+	}
+
+	return &GZipOptions{
+		CompressionLevel: compressionlevel,
+		WindowSize:       windowsize,
+		Strategies:       strategies,
+	}, nil
+}
+
+func defaultGzipOptions() (*GZipOptions, error) {
+	return &GZipOptions{
+		CompressionLevel: 9,
+		WindowSize:       15,
+	}, nil
 }
 
 func parseLZMAOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
@@ -107,4 +138,10 @@ const (
 	CompressorXZ   Compressor = 4
 	CompressorLZ4  Compressor = 5
 	CompressorZSTD Compressor = 6
+)
+
+const (
+	ErrInvalidCompressionLevel      = errors.Error("invalid compression level")
+	ErrInvalidWindowSize            = errors.Error("invalid window size")
+	ErrInvalidCompressionStrategies = errors.Error("invalid compression strategies")
 )
