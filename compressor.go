@@ -99,12 +99,33 @@ func defaultGzipOptions() *GZipOptions {
 	}
 }
 
-func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
-	return nil, nil
+type LZOOptions struct {
+	Algorithm        uint32
+	CompressionLevel uint32
 }
 
-func defaultLZOOptions() any {
-	return nil
+func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (*LZOOptions, error) {
+	algorithm := ler.ReadUint32()
+	if algorithm > 4 {
+		return nil, ErrInvalidCompressionAlgorithm
+	}
+
+	compressionlevel := ler.ReadUint32()
+	if compressionlevel > 9 || algorithm != 4 && compressionlevel != 0 {
+		return nil, ErrInvalidCompressionLevel
+	}
+
+	return &LZOOptions{
+		Algorithm:        algorithm,
+		CompressionLevel: compressionlevel,
+	}, nil
+}
+
+func defaultLZOOptions() *LZOOptions {
+	return &LZOOptions{
+		Algorithm:        4,
+		CompressionLevel: 8,
+	}
 }
 
 func parseXZOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
@@ -141,4 +162,5 @@ const (
 	ErrInvalidWindowSize            = errors.Error("invalid window size")
 	ErrInvalidCompressionStrategies = errors.Error("invalid compression strategies")
 	ErrNoCompressorOptions          = errors.Error("no compressor options should be supplied")
+	ErrInvalidCompressionAlgorithm  = errors.Error("invalid compression algorithm")
 )
