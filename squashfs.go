@@ -30,6 +30,83 @@ func (c Compressor) String() string {
 	return "unknown"
 }
 
+type CompressorOptions any
+
+func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEndianReader) (CompressorOptions, error) {
+	switch c {
+	case CompressorGZIP:
+		if hasOptionsFlag {
+			return parseGZipOptions(ler)
+		} else {
+			return defaultGzipOptions()
+		}
+	case CompressorLZMA:
+		return parseLZMAOptions(ler)
+	case CompressorLZO:
+		if hasOptionsFlag {
+			return parseLZOOptions(ler)
+		} else {
+			return defaultLZOOptions()
+		}
+	case CompressorXZ:
+		if hasOptionsFlag {
+			return parseXZOptions(ler)
+		} else {
+			return defaultXZOptions()
+		}
+	case CompressorLZ4:
+		return parseLZ4Options(ler)
+	case CompressorZSTD:
+		if hasOptionsFlag {
+			return parseZStdOptions(ler)
+		} else {
+			return defaultZStdOptions()
+		}
+	}
+
+	return nil, ErrInvalidCompressor
+}
+
+func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
+	return nil, nil
+}
+
+func defaultGzipOptions() (any, error) {
+	return nil, nil
+}
+
+func parseLZMAOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
+	return nil, nil
+}
+
+func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
+	return nil, nil
+}
+
+func defaultLZOOptions() (any, error) {
+	return nil, nil
+}
+
+func parseXZOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
+	return nil, nil
+}
+
+func defaultXZOptions() (any, error) {
+	return nil, nil
+}
+
+func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (any, error) {
+	return nil, nil
+}
+
+func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (any, error) {
+	return nil, nil
+}
+
+func defaultZStdOptions() (any, error) {
+	return nil, nil
+}
+
 const (
 	CompressorGZIP Compressor = 1
 	CompressorLZMA Compressor = 2
