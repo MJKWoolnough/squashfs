@@ -2,6 +2,7 @@ package squashfs
 
 import (
 	"io"
+	"io/fs"
 	"time"
 
 	"vimagination.zapto.org/byteio"
@@ -87,6 +88,16 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 		ExportTable:        exporttable,
 		CompressionOptions: compressoroptions,
 	}, nil
+}
+
+type squashfs struct{}
+
+func (s *squashfs) Open(path string) (fs.File, error) {
+	return nil, errors.New("unimplemented")
+}
+
+func Open(r io.ReaderAt) (fs.FS, error) {
+	return &squashfs{}, nil
 }
 
 const (
