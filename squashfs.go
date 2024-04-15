@@ -92,7 +92,8 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 }
 
 type squashfs struct {
-	*superblock
+	superblock *superblock
+	reader     io.ReaderAt
 }
 
 func (s *squashfs) Open(path string) (fs.File, error) {
@@ -127,6 +128,7 @@ func Open(r io.ReaderAt) (fs.FS, error) {
 
 	return &squashfs{
 		superblock: sb,
+		reader:     r,
 	}, nil
 }
 
