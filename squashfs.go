@@ -29,7 +29,7 @@ type superblock struct {
 	DirTable           uint64
 	FragTable          uint64
 	ExportTable        uint64
-	compressionOptions [4]byte
+	CompressionOptions CompressorOptions
 }
 
 func GetStats(r io.Reader) (*Stats, error) {
@@ -61,9 +61,9 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 	modtime := ler.ReadUint32()
 	blocksize := ler.ReadUint32()
 	fragcount := ler.ReadUint32()
-	compressor := ler.ReadUint16()
+	compressor := Compressor(ler.ReadUint16())
 
-	if compressor == 0 || compressor > uint16(CompressorZSTD) {
+	if compressor == 0 || compressor > CompressorZSTD {
 		return nil, ErrInvalidCompressor
 	}
 
@@ -86,10 +86,9 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 	fragtable := ler.ReadUint64()
 	exporttable := ler.ReadUint64()
 
-	var compressionOptions [4]byte
-
-	if flags&0x400 != 0 {
-		copy(compressionOptions[:], buf[100:])
+	compressoroptions, err := compressor.parseOptions(flags&0x400 != 0, &ler)
+	if err != nil {
+		return nil, err
 	}
 
 	return &superblock{
@@ -98,7 +97,7 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 			ModTime:    time.Unix(int64(modtime), 0),
 			BlockSize:  blocksize,
 			FragCount:  fragcount,
-			Compressor: Compressor(compressor),
+			Compressor: compressor,
 			Flags:      flags,
 			BytesUsed:  bytesused,
 		},
@@ -109,7 +108,7 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 		DirTable:           dirtable,
 		FragTable:          fragtable,
 		ExportTable:        exporttable,
-		compressionOptions: compressionOptions,
+		CompressionOptions: compressoroptions,
 	}, nil
 }
 
