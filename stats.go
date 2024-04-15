@@ -1,6 +1,7 @@
 package squashfs
 
 import (
+	"fmt"
 	"io"
 	"time"
 )
@@ -18,7 +19,7 @@ type Stats struct {
 func GetStats(r io.Reader) (*Stats, error) {
 	sb, err := readSuperBlock(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading superblock: %w", err)
 	}
 
 	return &sb.Stats, nil
