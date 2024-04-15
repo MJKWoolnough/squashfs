@@ -22,7 +22,7 @@ func TestGetStats(t *testing.T) {
 	}
 	defer f.Close()
 
-	stats, err := GetStats(f)
+	stats, err := ReadStats(f)
 	if err != nil {
 		t.Fatalf("unexpected error reading squashfs file: %s", err)
 	}

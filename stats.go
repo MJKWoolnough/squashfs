@@ -16,7 +16,7 @@ type Stats struct {
 	BytesUsed  uint64
 }
 
-func GetStats(r io.Reader) (*Stats, error) {
+func ReadStats(r io.Reader) (*Stats, error) {
 	sb, err := readSuperBlock(r)
 	if err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
