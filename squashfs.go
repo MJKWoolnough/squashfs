@@ -1,6 +1,7 @@
 package squashfs
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 	"time"
@@ -90,14 +91,43 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 	}, nil
 }
 
-type squashfs struct{}
+type squashfs struct {
+	*superblock
+}
 
 func (s *squashfs) Open(path string) (fs.File, error) {
 	return nil, errors.New("unimplemented")
 }
 
+type reader struct {
+	io.ReaderAt
+	pos int64
+}
+
+func (r *reader) Read(p []byte) (int, error) {
+	n, err := r.ReaderAt.ReadAt(p, r.pos)
+
+	r.pos += int64(n)
+
+	return n, err
+}
+
 func Open(r io.ReaderAt) (fs.FS, error) {
-	return &squashfs{}, nil
+	rr, ok := r.(io.Reader)
+	if !ok {
+		rr = &reader{
+			ReaderAt: r,
+		}
+	}
+
+	sb, err := readSuperBlock(rr)
+	if err != nil {
+		return nil, fmt.Errorf("error reading superblock: %w", err)
+	}
+
+	return &squashfs{
+		superblock: sb,
+	}, nil
 }
 
 const (
