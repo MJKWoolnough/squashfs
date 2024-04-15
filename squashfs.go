@@ -116,5 +116,4 @@ const (
 	ErrInvalidMagicNumber = errors.Error("invalid magic number")
 	ErrInvalidBlockSize   = errors.Error("invalid block size")
 	ErrInvalidVersion     = errors.Error("invalid version")
-	ErrInvalidCompressor  = errors.Error("invalid or unknown compressor")
 )

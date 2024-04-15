@@ -210,6 +210,7 @@ const (
 )
 
 const (
+	ErrInvalidCompressor            = errors.Error("invalid or unknown compressor")
 	ErrInvalidCompressionLevel      = errors.Error("invalid compression level")
 	ErrInvalidWindowSize            = errors.Error("invalid window size")
 	ErrInvalidCompressionStrategies = errors.Error("invalid compression strategies")
