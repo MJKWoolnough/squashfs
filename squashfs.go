@@ -9,16 +9,6 @@ import (
 	"vimagination.zapto.org/memio"
 )
 
-type Stats struct {
-	Inodes     uint32
-	ModTime    time.Time
-	BlockSize  uint32
-	FragCount  uint32
-	Compressor Compressor
-	Flags      uint16
-	BytesUsed  uint64
-}
-
 type superblock struct {
 	Stats
 	IDCount            uint16
@@ -30,15 +20,6 @@ type superblock struct {
 	FragTable          uint64
 	ExportTable        uint64
 	CompressionOptions CompressorOptions
-}
-
-func GetStats(r io.Reader) (*Stats, error) {
-	sb, err := readSuperBlock(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sb.Stats, nil
 }
 
 func readSuperBlock(r io.Reader) (*superblock, error) {
