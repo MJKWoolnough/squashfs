@@ -63,10 +63,6 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 	fragcount := ler.ReadUint32()
 	compressor := Compressor(ler.ReadUint16())
 
-	if compressor == 0 || compressor > CompressorZSTD {
-		return nil, ErrInvalidCompressor
-	}
-
 	if 1<<ler.ReadUint16() != blocksize {
 		return nil, ErrInvalidBlockSize
 	}
