@@ -160,29 +160,8 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 	return inode.getChild(file)
 }
 
-type reader struct {
-	io.ReaderAt
-	pos  int64
-	root dirInode
-}
-
-func (r *reader) Read(p []byte) (int, error) {
-	n, err := r.ReaderAt.ReadAt(p, r.pos)
-
-	r.pos += int64(n)
-
-	return n, err
-}
-
 func Open(r io.ReaderAt) (fs.FS, error) {
-	rr, ok := r.(io.Reader)
-	if !ok {
-		rr = &reader{
-			ReaderAt: r,
-		}
-	}
-
-	sb, err := readSuperBlock(rr)
+	sb, err := readSuperBlock(io.NewSectionReader(r, 0, 104))
 	if err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
 	}
