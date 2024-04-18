@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// Type Stats contains basic data about the SquashFS file, read from the
+// superblock.
 type Stats struct {
 	Inodes     uint32
 	ModTime    time.Time
