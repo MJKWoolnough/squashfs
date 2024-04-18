@@ -18,6 +18,8 @@ type Stats struct {
 	BytesUsed  uint64
 }
 
+// ReadStats reads the superblock from the passed reader and returns useful
+// stats.
 func ReadStats(r io.Reader) (*Stats, error) {
 	sb, err := readSuperBlock(r)
 	if err != nil {
