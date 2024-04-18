@@ -1,3 +1,4 @@
+// Package squashfs is a SquashFS reader and writer using fs.FS
 package squashfs
 
 import (
