@@ -1,5 +1,5 @@
 // Package squashfs is a SquashFS reader and writer using fs.FS
-package squashfs
+package squashfs // import "vimagination.zapto.org/squashfs"
 
 import (
 	"fmt"
