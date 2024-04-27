@@ -43,9 +43,8 @@ func (s *skipSeeker) Seek(offset int64, whence int) (int64, error) {
 
 type blockReader struct {
 	*squashfs
-	r           io.ReadSeeker
-	next        int64
-	compression Compressor
+	r    io.ReadSeeker
+	next int64
 }
 
 func (b *blockReader) nextReader() error {
@@ -66,7 +65,7 @@ func (b *blockReader) nextReader() error {
 	b.r = io.NewSectionReader(b.reader, b.next+2, size)
 
 	if header>>15 == 0 {
-		c, err := b.compression.decompress(b.r)
+		c, err := b.squashfs.superblock.Compressor.decompress(b.r)
 		if err != nil {
 			return err
 		}
