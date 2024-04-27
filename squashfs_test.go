@@ -74,4 +74,8 @@ func TestStat(t *testing.T) {
 	if !stats.IsDir() {
 		t.Fatal("expecting stat for root dir to be a dir")
 	}
+
+	if m := stats.Mode(); m&0o777 != 0o777 {
+		t.Fatalf("expecting perms 777, got %s", m)
+	}
 }
