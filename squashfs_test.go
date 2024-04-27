@@ -45,3 +45,33 @@ func TestOpen(t *testing.T) {
 		t.Errorf("expected to read %q, got %q", contentsA, contents)
 	}
 }
+
+func TestStat(t *testing.T) {
+	sqfs, err := buildSquashFS(
+		t,
+		dir("dirA", []child{}),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error creating squashfs file: %s", err)
+	}
+
+	f, err := os.Open(sqfs)
+	if err != nil {
+		t.Fatalf("unexpected error opening squashfs file: %s", err)
+	}
+	defer f.Close()
+
+	sfs, err := Open(f)
+	if err != nil {
+		t.Fatalf("unexpected error opening squashfs reader: %s", err)
+	}
+
+	stats, err := sfs.Stat("/")
+	if err != nil {
+		t.Fatalf("unexpected error stat'ing root: %s", err)
+	}
+
+	if !stats.IsDir() {
+		t.Fatal("expecting stat for root dir to be a dir")
+	}
+}
