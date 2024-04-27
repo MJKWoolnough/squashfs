@@ -2,12 +2,12 @@ package squashfs
 
 import (
 	"compress/zlib"
+	"errors"
 	"fmt"
 	"io"
 	"math/bits"
 
 	"vimagination.zapto.org/byteio"
-	"vimagination.zapto.org/errors"
 )
 
 type Compressor uint16
@@ -221,16 +221,16 @@ const (
 	CompressorZSTD Compressor = 6
 )
 
-const (
-	ErrInvalidCompressor            = errors.Error("invalid or unknown compressor")
-	ErrInvalidCompressionLevel      = errors.Error("invalid compression level")
-	ErrInvalidWindowSize            = errors.Error("invalid window size")
-	ErrInvalidCompressionStrategies = errors.Error("invalid compression strategies")
-	ErrNoCompressorOptions          = errors.Error("no compressor options should be supplied")
-	ErrInvalidCompressionAlgorithm  = errors.Error("invalid compression algorithm")
-	ErrInvalidDictionarySize        = errors.Error("invalid dictionary size")
-	ErrInvalidFilters               = errors.Error("invalid filters")
-	ErrInvalidCompressorVersion     = errors.Error("invalid compressor version")
-	ErrInvalidCompressorFlags       = errors.Error("invalid compressor flags")
-	ErrUnsupportedCompressor        = errors.Error("unsupported compressor")
+var (
+	ErrInvalidCompressor            = errors.New("invalid or unknown compressor")
+	ErrInvalidCompressionLevel      = errors.New("invalid compression level")
+	ErrInvalidWindowSize            = errors.New("invalid window size")
+	ErrInvalidCompressionStrategies = errors.New("invalid compression strategies")
+	ErrNoCompressorOptions          = errors.New("no compressor options should be supplied")
+	ErrInvalidCompressionAlgorithm  = errors.New("invalid compression algorithm")
+	ErrInvalidDictionarySize        = errors.New("invalid dictionary size")
+	ErrInvalidFilters               = errors.New("invalid filters")
+	ErrInvalidCompressorVersion     = errors.New("invalid compressor version")
+	ErrInvalidCompressorFlags       = errors.New("invalid compressor flags")
+	ErrUnsupportedCompressor        = errors.New("unsupported compressor")
 )
