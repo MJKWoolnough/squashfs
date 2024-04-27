@@ -161,7 +161,16 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 	return inode.getChild(file)
 }
 
-func Open(r io.ReaderAt) (fs.FS, error) {
+func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
+	return nil, errors.New("unimplemented")
+}
+
+type FS interface {
+	fs.FS
+	fs.StatFS
+}
+
+func Open(r io.ReaderAt) (FS, error) {
 	sb, err := readSuperBlock(io.NewSectionReader(r, 0, 104))
 	if err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
