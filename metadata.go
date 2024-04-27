@@ -22,7 +22,9 @@ func (s *squashfs) ReadInode(pointer uint64) (*blockReader, error) {
 		next:     onDisk,
 	}
 
-	b.init(pos)
+	if err := b.init(pos); err != nil {
+		return nil, err
+	}
 
 	return b, nil
 }
