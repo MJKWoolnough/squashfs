@@ -1,6 +1,9 @@
 package squashfs
 
 import (
+	"compress/zlib"
+	"fmt"
+	"io"
 	"math/bits"
 
 	"vimagination.zapto.org/byteio"
@@ -26,6 +29,15 @@ func (c Compressor) String() string {
 	}
 
 	return "unknown"
+}
+
+func (c Compressor) decompress(r io.Reader) (io.Reader, error) {
+	switch c {
+	case CompressorGZIP:
+		return zlib.NewReader(r)
+	}
+
+	return nil, fmt.Errorf("%s: %w", c, ErrUnsupportedCompressor)
 }
 
 type CompressorOptions any
@@ -220,4 +232,5 @@ const (
 	ErrInvalidFilters               = errors.Error("invalid filters")
 	ErrInvalidCompressorVersion     = errors.Error("invalid compressor version")
 	ErrInvalidCompressorFlags       = errors.Error("invalid compressor flags")
+	ErrUnsupportedCompressor        = errors.Error("unsupported compressor")
 )
