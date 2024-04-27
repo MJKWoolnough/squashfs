@@ -161,10 +161,6 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 	return inode.getChild(file)
 }
 
-func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
-	return nil, errors.New("unimplemented")
-}
-
 type FS interface {
 	fs.FS
 	fs.StatFS
