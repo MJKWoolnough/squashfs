@@ -62,6 +62,7 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 
 	rootinode := ler.ReadUint64()
 	bytesused := ler.ReadUint64()
+	idTable := ler.ReadUint64()
 	xattrtable := ler.ReadUint64()
 	inodetable := ler.ReadUint64()
 	dirtable := ler.ReadUint64()
@@ -85,6 +86,7 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 		},
 		IDCount:            idcount,
 		RootInode:          rootinode,
+		IDTable:            idTable,
 		XattrTable:         xattrtable,
 		InodeTable:         inodetable,
 		DirTable:           dirtable,
