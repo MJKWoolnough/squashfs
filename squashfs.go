@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"vimagination.zapto.org/byteio"
@@ -96,71 +94,13 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 	}, nil
 }
 
-type inodeData struct {
-	name        string
-	permissions uint16
-	uid         uint16
-	gid         uint16
-	mtime       time.Time
-	inode       uint32
-}
-
-func (i *inodeData) Stat() (fs.FileInfo, error) {
-	return nil, nil
-}
-
-type dirInode struct {
-	inodeData
-	blockIndex  uint32
-	linkCount   uint32
-	fileSize    uint16
-	blockOffset uint16
-	parent      uint32
-}
-
-func (d *dirInode) getChild(name string) (fs.File, error) {
-	return nil, nil
-}
-
-func (d *dirInode) Read(_ []byte) (int, error) {
-	return 0, nil
-}
-
-func (d *dirInode) Close() error {
-	return nil
-}
-
 type squashfs struct {
 	superblock *superblock
 	reader     io.ReaderAt
-	root       *dirInode
 }
 
 func (s *squashfs) Open(path string) (fs.File, error) {
-	dir, file := filepath.Split(path)
-
-	path = filepath.ToSlash(dir)
-	if strings.HasPrefix(path, "/") {
-		path = path[1:]
-	}
-
-	inode := s.root
-
-	for _, part := range strings.Split(path, "/") {
-		child, err := inode.getChild(part)
-		if err != nil {
-			return nil, err
-		}
-
-		switch child := child.(type) {
-		case *dirInode:
-			inode = child
-		default:
-			return nil, fs.ErrInvalid
-		}
-	}
-
-	return inode.getChild(file)
+	return nil, errors.New("unimplemented")
 }
 
 type FS interface {
