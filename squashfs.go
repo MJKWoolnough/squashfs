@@ -25,12 +25,12 @@ type superblock struct {
 	CompressionOptions CompressorOptions
 }
 
-func readSuperBlock(r io.Reader) (*superblock, error) {
+func (s *superblock) readFrom(r io.Reader) error {
 	var buf [104]byte
 
 	_, err := io.ReadFull(r, buf[:])
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	mb := memio.Buffer(buf[:])
@@ -38,64 +38,42 @@ func readSuperBlock(r io.Reader) (*superblock, error) {
 	ler := byteio.StickyLittleEndianReader{Reader: &mb}
 
 	if ler.ReadUint32() != 0x73717368 {
-		return nil, ErrInvalidMagicNumber
+		return ErrInvalidMagicNumber
 	}
 
-	inodes := ler.ReadUint32()
-	modtime := ler.ReadUint32()
-	blocksize := ler.ReadUint32()
-	fragcount := ler.ReadUint32()
-	compressor := Compressor(ler.ReadUint16())
+	s.Inodes = ler.ReadUint32()
+	s.ModTime = time.Unix(int64(ler.ReadUint32()), 0)
+	s.BlockSize = ler.ReadUint32()
+	s.FragCount = ler.ReadUint32()
+	s.Compressor = Compressor(ler.ReadUint16())
 
-	if 1<<ler.ReadUint16() != blocksize {
-		return nil, ErrInvalidBlockSize
+	if 1<<ler.ReadUint16() != s.BlockSize {
+		return ErrInvalidBlockSize
 	}
 
-	flags := ler.ReadUint16()
-	idcount := ler.ReadUint16()
+	s.Flags = ler.ReadUint16()
+	s.IDCount = ler.ReadUint16()
 
 	if ler.ReadUint16() != 4 || ler.ReadUint16() != 0 {
-		return nil, ErrInvalidVersion
+		return ErrInvalidVersion
 	}
 
-	rootinode := ler.ReadUint64()
-	bytesused := ler.ReadUint64()
-	idTable := ler.ReadUint64()
-	xattrtable := ler.ReadUint64()
-	inodetable := ler.ReadUint64()
-	dirtable := ler.ReadUint64()
-	fragtable := ler.ReadUint64()
-	exporttable := ler.ReadUint64()
+	s.RootInode = ler.ReadUint64()
+	s.BytesUsed = ler.ReadUint64()
+	s.IDTable = ler.ReadUint64()
+	s.XattrTable = ler.ReadUint64()
+	s.InodeTable = ler.ReadUint64()
+	s.DirTable = ler.ReadUint64()
+	s.FragTable = ler.ReadUint64()
+	s.ExportTable = ler.ReadUint64()
 
-	compressoroptions, err := compressor.parseOptions(flags&0x400 != 0, &ler)
-	if err != nil {
-		return nil, err
-	}
+	s.CompressionOptions, err = s.Compressor.parseOptions(s.Flags&0x400 != 0, &ler)
 
-	return &superblock{
-		Stats: Stats{
-			Inodes:     inodes,
-			ModTime:    time.Unix(int64(modtime), 0),
-			BlockSize:  blocksize,
-			FragCount:  fragcount,
-			Compressor: compressor,
-			Flags:      flags,
-			BytesUsed:  bytesused,
-		},
-		IDCount:            idcount,
-		RootInode:          rootinode,
-		IDTable:            idTable,
-		XattrTable:         xattrtable,
-		InodeTable:         inodetable,
-		DirTable:           dirtable,
-		FragTable:          fragtable,
-		ExportTable:        exporttable,
-		CompressionOptions: compressoroptions,
-	}, nil
+	return err
 }
 
 type squashfs struct {
-	superblock *superblock
+	superblock superblock
 	reader     io.ReaderAt
 }
 
@@ -109,8 +87,8 @@ type FS interface {
 }
 
 func Open(r io.ReaderAt) (FS, error) {
-	sb, err := readSuperBlock(io.NewSectionReader(r, 0, 104))
-	if err != nil {
+	var sb superblock
+	if err := sb.readFrom(io.NewSectionReader(r, 0, 104)); err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
 	}
 

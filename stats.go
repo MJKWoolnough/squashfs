@@ -21,8 +21,8 @@ type Stats struct {
 // ReadStats reads the superblock from the passed reader and returns useful
 // stats.
 func ReadStats(r io.Reader) (*Stats, error) {
-	sb, err := readSuperBlock(r)
-	if err != nil {
+	var sb superblock
+	if err := sb.readFrom(r); err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
 	}
 
