@@ -87,6 +87,50 @@ func (d basicDir) Sys() any {
 	return d
 }
 
+type basicFile struct {
+	commonStat
+	blocksStart uint32
+	fragIndex   uint32
+	blockOffset uint32
+	fileSize    uint32
+	blockSizes  []uint32
+}
+
+func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) basicFile {
+	f := basicFile{
+		blocksStart: ler.ReadUint32(),
+		fragIndex:   ler.ReadUint32(),
+		blockOffset: ler.ReadUint32(),
+		fileSize:    ler.ReadUint32(),
+	}
+
+	var blockCount uint32
+
+	if f.fileSize > 0 {
+		if f.fragIndex == 0xFFFFFFFF {
+			blockCount = 1 + (f.fileSize-1)/blockSize
+		} else {
+			blockCount = f.fileSize / blockSize
+		}
+	}
+
+	f.blockSizes = make([]uint32, blockCount)
+
+	for n := range f.blockSizes {
+		f.blockSizes[n] = ler.ReadUint32()
+	}
+
+	return f
+}
+
+func (f basicFile) Size() int64 {
+	return int64(f.fileSize)
+}
+
+func (f basicFile) Sys() any {
+	return f
+}
+
 func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
@@ -114,6 +158,8 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	switch typ {
 	case inodeBasicDir:
 		fi = readBasicDir(&ler, common)
+	case inodeBasicFile:
+		fi = readBasicFile(&ler, common, s.superblock.BlockSize)
 	default:
 		return nil, errors.New("unimplemented")
 	}
