@@ -86,7 +86,7 @@ func (d basicDir) Sys() any {
 }
 
 func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
-	r, err := s.ReadInode(s.superblock.RootInode)
+	r, err := s.readInode(s.superblock.RootInode)
 	if err != nil {
 		return nil, err
 	}
