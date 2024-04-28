@@ -242,7 +242,3 @@ func (s *squashfs) resolve(path string) (fs.FileInfo, error) {
 
 	return curr, nil
 }
-
-func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
-	return s.resolve(path)
-}
