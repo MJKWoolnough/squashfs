@@ -9,8 +9,8 @@ import (
 
 const maxBlockSize = 1 << 13
 
-func (s *squashfs) readInode(pointer uint64) (*blockReader, error) {
-	onDisk := int64(s.superblock.InodeTable + (pointer >> 16))
+func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
+	onDisk := int64(table + (pointer >> 16))
 
 	pos := int64(pointer & 0xffff)
 	if pos > maxBlockSize {
