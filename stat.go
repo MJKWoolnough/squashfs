@@ -153,7 +153,7 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset, tota
 
 			if dname == name {
 				return s.getEntry(start<<16 | offset)
-			} else if name > dname {
+			} else if name < dname {
 				return nil, fs.ErrNotExist
 			}
 		}
