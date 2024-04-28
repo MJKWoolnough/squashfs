@@ -2,7 +2,9 @@ package squashfs
 
 import (
 	"errors"
+	"io"
 	"io/fs"
+	"strings"
 	"time"
 
 	"vimagination.zapto.org/byteio"
@@ -85,8 +87,8 @@ func (d basicDir) Sys() any {
 	return d
 }
 
-func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
-	r, err := s.readInode(s.superblock.RootInode)
+func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
+	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
 		return nil, err
 	}
@@ -121,4 +123,80 @@ func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
 	}
 
 	return fi, nil
+}
+
+func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset, totalSize uint16) (fs.FileInfo, error) {
+	r, err := s.readMetadata(uint64(blockIndex)<<16|uint64(blockOffset), s.superblock.DirTable)
+	if err != nil {
+		return nil, err
+	}
+
+	ler := byteio.StickyLittleEndianReader{Reader: io.LimitReader(r, int64(totalSize))}
+
+	for {
+		count := ler.ReadUint32()
+		start := uint64(ler.ReadUint32())
+		ler.ReadUint32() // inode number
+
+		if errors.Is(ler.Err, io.EOF) {
+			return nil, fs.ErrNotExist
+		} else if ler.Err != nil {
+			return nil, ler.Err
+		}
+
+		for i := uint32(0); i <= count; i++ {
+			offset := uint64(ler.ReadUint16())
+			ler.ReadInt16()  // inode offset
+			ler.ReadUint16() // type
+			nameSize := int(ler.ReadUint16())
+			dname := ler.ReadString(nameSize + 1)
+
+			if dname == name {
+				return s.getEntry(start<<16 | offset)
+			} else if name > dname {
+				return nil, fs.ErrNotExist
+			}
+		}
+	}
+}
+
+func (s *squashfs) resolve(path string) (fs.FileInfo, error) {
+	curr, err := s.getEntry(s.superblock.RootInode)
+	if err != nil {
+		return nil, err
+	}
+
+	for path != "" {
+		slashPos := strings.Index(path, "/")
+
+		var name string
+
+		if slashPos == -1 {
+			name = path
+			path = ""
+		} else {
+			name = path[:slashPos]
+			path = path[slashPos+1:]
+		}
+
+		if name == "" {
+			continue
+		}
+
+		switch dir := curr.(type) {
+		case basicDir:
+			curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fs.ErrInvalid
+		}
+	}
+
+	return curr, nil
+}
+
+func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
+	return s.resolve(path)
 }
