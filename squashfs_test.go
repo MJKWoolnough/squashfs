@@ -49,7 +49,7 @@ func TestOpen(t *testing.T) {
 func TestStat(t *testing.T) {
 	sqfs, err := buildSquashFS(
 		t,
-		dir("dirA", []child{}),
+		dir("dirA", []child{}, chmod(0o555)),
 	)
 	if err != nil {
 		t.Fatalf("unexpected error creating squashfs file: %s", err)
@@ -77,5 +77,18 @@ func TestStat(t *testing.T) {
 
 	if m := stats.Mode(); m&0o777 != 0o777 {
 		t.Fatalf("expecting perms 777, got %s", m)
+	}
+
+	stats, err = sfs.Stat("/dirA")
+	if err != nil {
+		t.Fatalf("unexpected error stat'ing dir: %s", err)
+	}
+
+	if !stats.IsDir() {
+		t.Fatal("expecting stat for dir to be a dir")
+	}
+
+	if m := stats.Mode(); m&0o555 != 0o555 {
+		t.Fatalf("expecting perms 555, got %s", m)
 	}
 }
