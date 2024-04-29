@@ -82,7 +82,6 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 }
 
 type FS interface {
-	fs.FS
 	fs.StatFS
 }
 
