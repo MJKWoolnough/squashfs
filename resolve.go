@@ -87,6 +87,62 @@ func (d dirStat) Sys() any {
 	return d
 }
 
+type dirIndex struct {
+	index uint32
+	start uint32
+	name  string
+}
+
+type dirExtStat struct {
+	commonStat
+	linkCount   uint32
+	fileSize    uint32
+	blockIndex  uint32
+	parentInode uint32
+	blockOffset uint16
+	xattrIndex  uint32
+	index       []dirIndex
+}
+
+func readExtendedDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirExtStat {
+	d := dirExtStat{
+		commonStat:  common,
+		linkCount:   ler.ReadUint32(),
+		fileSize:    ler.ReadUint32(),
+		blockIndex:  ler.ReadUint32(),
+		parentInode: ler.ReadUint32(),
+		index:       make([]dirIndex, ler.ReadUint16()),
+		blockOffset: ler.ReadUint16(),
+		xattrIndex:  ler.ReadUint32(),
+	}
+
+	for n := range d.index {
+		d.index[n] = dirIndex{
+			index: ler.ReadUint32(),
+			start: ler.ReadUint32(),
+			name:  ler.ReadString(int(ler.ReadUint32()) + 1),
+		}
+	}
+
+	return d
+}
+
+func (d dirExtStat) Mode() fs.FileMode {
+	return fs.ModeDir | fs.FileMode(d.perms)
+}
+
+func (d dirExtStat) IsDir() bool {
+	return true
+}
+
+func (d dirExtStat) Size() int64 {
+	return 0
+}
+
+func (d dirExtStat) Sys() any {
+	return d
+}
+
 type fileStat struct {
 	commonStat
 	blocksStart uint64
