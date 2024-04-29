@@ -87,30 +87,34 @@ func (d basicDir) Sys() any {
 	return d
 }
 
-type basicFile struct {
+type fileStat struct {
 	commonStat
-	blocksStart uint32
+	blocksStart uint64
+	sparse      uint64
+	linkCount   uint32
 	fragIndex   uint32
 	blockOffset uint32
-	fileSize    uint32
+	fileSize    uint64
+	xattrIndex  uint32
 	blockSizes  []uint32
 }
 
-func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) basicFile {
-	f := basicFile{
-		blocksStart: ler.ReadUint32(),
+func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
+	f := fileStat{
+		blocksStart: uint64(ler.ReadUint32()),
 		fragIndex:   ler.ReadUint32(),
 		blockOffset: ler.ReadUint32(),
-		fileSize:    ler.ReadUint32(),
+		fileSize:    uint64(ler.ReadUint32()),
+		xattrIndex:  0xFFFFFFFF,
 	}
 
-	var blockCount uint32
+	var blockCount uint64
 
 	if f.fileSize > 0 {
 		if f.fragIndex == 0xFFFFFFFF {
-			blockCount = 1 + (f.fileSize-1)/blockSize
+			blockCount = 1 + (f.fileSize-1)/uint64(blockSize)
 		} else {
-			blockCount = f.fileSize / blockSize
+			blockCount = f.fileSize / uint64(blockSize)
 		}
 	}
 
@@ -123,11 +127,11 @@ func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, bloc
 	return f
 }
 
-func (f basicFile) Size() int64 {
+func (f fileStat) Size() int64 {
 	return int64(f.fileSize)
 }
 
-func (f basicFile) Sys() any {
+func (f fileStat) Sys() any {
 	return f
 }
 
