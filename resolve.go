@@ -245,6 +245,53 @@ func (s symlinkStat) Mode() fs.FileMode {
 	return fs.ModeSymlink | fs.FileMode(s.perms)
 }
 
+func (s symlinkStat) Sys() any {
+	return s
+}
+
+type blockStat struct {
+	commonStat
+	linkCount    uint32
+	deviceNumber uint32
+	xattrIndex   uint32
+}
+
+func readBasicBlock(ler *byteio.StickyLittleEndianReader, common commonStat) blockStat {
+	return blockStat{
+		commonStat:   common,
+		linkCount:    ler.ReadUint32(),
+		deviceNumber: ler.ReadUint32(),
+		xattrIndex:   0xFFFFFFFF,
+	}
+}
+
+func readExtBlock(ler *byteio.StickyLittleEndianReader, common commonStat) blockStat {
+	return blockStat{
+		commonStat:   common,
+		linkCount:    ler.ReadUint32(),
+		deviceNumber: ler.ReadUint32(),
+		xattrIndex:   ler.ReadUint32(),
+	}
+}
+
+func (b blockStat) Mode() fs.FileMode {
+	return fs.ModeDevice | fs.FileMode(b.perms)
+}
+
+func (b blockStat) Sys() any {
+	return b
+}
+
+type charStat blockStat
+
+func (c charStat) Mode() fs.FileMode {
+	return fs.ModeCharDevice | fs.FileMode(c.perms)
+}
+
+func (c charStat) Sys() any {
+	return c
+}
+
 func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
@@ -280,6 +327,14 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 		fi = readBasicSymlink(&ler, common)
 	case inodeExtSymlink:
 		fi = readExtSymlink(&ler, common)
+	case inodeBasicBlock:
+		fi = readBasicBlock(&ler, common)
+	case inodeExtBlock:
+		fi = readExtBlock(&ler, common)
+	case inodeBasicChar:
+		fi = charStat(readBasicBlock(&ler, common))
+	case inodeExtChar:
+		fi = charStat(readExtBlock(&ler, common))
 	default:
 		return nil, errors.New("unimplemented")
 	}
