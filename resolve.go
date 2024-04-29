@@ -193,6 +193,7 @@ func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, bloc
 
 func readExtendedFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
 	f := fileStat{
+		commonStat:  common,
 		blocksStart: ler.ReadUint64(),
 		fileSize:    ler.ReadUint64(),
 		sparse:      ler.ReadUint64(),
