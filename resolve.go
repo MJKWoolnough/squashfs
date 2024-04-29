@@ -292,6 +292,46 @@ func (c charStat) Sys() any {
 	return c
 }
 
+type fifoStat struct {
+	commonStat
+	linkCount  uint32
+	xattrIndex uint32
+}
+
+func readBasicFifo(ler *byteio.StickyLittleEndianReader, common commonStat) fifoStat {
+	return fifoStat{
+		commonStat: common,
+		linkCount:  ler.ReadUint32(),
+		xattrIndex: 0xFFFFFFFF,
+	}
+}
+
+func readExtendedFifo(ler *byteio.StickyLittleEndianReader, common commonStat) fifoStat {
+	return fifoStat{
+		commonStat: common,
+		linkCount:  ler.ReadUint32(),
+		xattrIndex: ler.ReadUint32(),
+	}
+}
+
+func (f fifoStat) Mode() fs.FileMode {
+	return fs.ModeNamedPipe | fs.FileMode(f.perms)
+}
+
+func (f fifoStat) Sys() any {
+	return f
+}
+
+type socketStat fifoStat
+
+func (s socketStat) Mode() fs.FileMode {
+	return fs.ModeSocket | fs.FileMode(s.perms)
+}
+
+func (s socketStat) Sys() any {
+	return s
+}
+
 func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
@@ -335,6 +375,14 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 		fi = charStat(readBasicBlock(&ler, common))
 	case inodeExtChar:
 		fi = charStat(readExtBlock(&ler, common))
+	case inodeBasicPipe:
+		fi = readBasicFifo(&ler, common)
+	case inodeExtPipe:
+		fi = readExtendedFifo(&ler, common)
+	case inodeBasicSock:
+		fi = socketStat(readBasicFifo(&ler, common))
+	case inodeExtSock:
+		fi = socketStat(readExtendedFifo(&ler, common))
 	default:
 		return nil, errors.New("unimplemented")
 	}
