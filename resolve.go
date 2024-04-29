@@ -99,15 +99,7 @@ type fileStat struct {
 	blockSizes  []uint32
 }
 
-func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
-	f := fileStat{
-		blocksStart: uint64(ler.ReadUint32()),
-		fragIndex:   ler.ReadUint32(),
-		blockOffset: ler.ReadUint32(),
-		fileSize:    uint64(ler.ReadUint32()),
-		xattrIndex:  0xFFFFFFFF,
-	}
-
+func (f *fileStat) readBlocks(ler *byteio.StickyLittleEndianReader, blockSize uint32) {
 	var blockCount uint64
 
 	if f.fileSize > 0 {
@@ -123,6 +115,34 @@ func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, bloc
 	for n := range f.blockSizes {
 		f.blockSizes[n] = ler.ReadUint32()
 	}
+}
+
+func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
+	f := fileStat{
+		blocksStart: uint64(ler.ReadUint32()),
+		fragIndex:   ler.ReadUint32(),
+		blockOffset: ler.ReadUint32(),
+		fileSize:    uint64(ler.ReadUint32()),
+		xattrIndex:  0xFFFFFFFF,
+	}
+
+	f.readBlocks(ler, blockSize)
+
+	return f
+}
+
+func readExtendedFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
+	f := fileStat{
+		blocksStart: ler.ReadUint64(),
+		fileSize:    ler.ReadUint64(),
+		sparse:      ler.ReadUint64(),
+		linkCount:   ler.ReadUint32(),
+		fragIndex:   ler.ReadUint32(),
+		blockOffset: ler.ReadUint32(),
+		xattrIndex:  ler.ReadUint32(),
+	}
+
+	f.readBlocks(ler, blockSize)
 
 	return f
 }
@@ -164,6 +184,8 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 		fi = readBasicDir(&ler, common)
 	case inodeBasicFile:
 		fi = readBasicFile(&ler, common, s.superblock.BlockSize)
+	case inodeExtFile:
+		fi = readExtendedFile(&ler, common, s.superblock.BlockSize)
 	default:
 		return nil, errors.New("unimplemented")
 	}
