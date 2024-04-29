@@ -22,6 +22,10 @@ func (c commonStat) Name() string {
 	return c.name
 }
 
+func (c commonStat) Size() int64 {
+	return 0
+}
+
 func (c commonStat) Mode() fs.FileMode {
 	return fs.FileMode(c.perms)
 }
@@ -211,6 +215,35 @@ func (f fileStat) Sys() any {
 	return f
 }
 
+type symlinkStat struct {
+	commonStat
+	linkCount  uint32
+	targetPath string
+	xattrIndex uint32
+}
+
+func readBasicSymlink(ler *byteio.StickyLittleEndianReader, common commonStat) symlinkStat {
+	return symlinkStat{
+		commonStat: common,
+		linkCount:  ler.ReadUint32(),
+		targetPath: ler.ReadString(int(ler.ReadUint32())),
+		xattrIndex: 0xFFFFFFFF,
+	}
+}
+
+func readExtSymlink(ler *byteio.StickyLittleEndianReader, common commonStat) symlinkStat {
+	return symlinkStat{
+		commonStat: common,
+		linkCount:  ler.ReadUint32(),
+		targetPath: ler.ReadString(int(ler.ReadUint32())),
+		xattrIndex: ler.ReadUint32(),
+	}
+}
+
+func (s symlinkStat) Mode() fs.FileMode {
+	return fs.ModeSymlink | fs.FileMode(s.perms)
+}
+
 func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
@@ -242,6 +275,10 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 		fi = readBasicFile(&ler, common, s.superblock.BlockSize)
 	case inodeExtFile:
 		fi = readExtendedFile(&ler, common, s.superblock.BlockSize)
+	case inodeBasicSymlink:
+		fi = readBasicSymlink(&ler, common)
+	case inodeExtSymlink:
+		fi = readExtSymlink(&ler, common)
 	default:
 		return nil, errors.New("unimplemented")
 	}
