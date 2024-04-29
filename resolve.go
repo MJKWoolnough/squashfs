@@ -51,7 +51,7 @@ const (
 	inodeExtSock      = 14
 )
 
-type basicDir struct {
+type dirStat struct {
 	commonStat
 	blockIndex  uint32
 	linkCount   uint32
@@ -60,8 +60,8 @@ type basicDir struct {
 	parentInode uint32
 }
 
-func readBasicDir(ler *byteio.StickyLittleEndianReader, common commonStat) basicDir {
-	return basicDir{
+func readBasicDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirStat {
+	return dirStat{
 		commonStat:  common,
 		blockIndex:  ler.ReadUint32(),
 		linkCount:   ler.ReadUint32(),
@@ -71,19 +71,19 @@ func readBasicDir(ler *byteio.StickyLittleEndianReader, common commonStat) basic
 	}
 }
 
-func (d basicDir) Mode() fs.FileMode {
+func (d dirStat) Mode() fs.FileMode {
 	return fs.ModeDir | fs.FileMode(d.perms)
 }
 
-func (d basicDir) IsDir() bool {
+func (d dirStat) IsDir() bool {
 	return true
 }
 
-func (d basicDir) Size() int64 {
+func (d dirStat) Size() int64 {
 	return 0
 }
 
-func (d basicDir) Sys() any {
+func (d dirStat) Sys() any {
 	return d
 }
 
@@ -256,7 +256,7 @@ func (s *squashfs) resolve(path string) (fs.FileInfo, error) {
 		}
 
 		switch dir := curr.(type) {
-		case basicDir:
+		case dirStat:
 			curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize)
 			if err != nil {
 				return nil, err
