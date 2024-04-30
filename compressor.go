@@ -2,7 +2,6 @@ package squashfs
 
 import (
 	"compress/zlib"
-	"errors"
 	"fmt"
 	"io"
 	"math/bits"
@@ -220,17 +219,3 @@ func defaultZStdOptions() *ZStdOptions {
 		CompressionLevel: 15,
 	}
 }
-
-var (
-	ErrInvalidCompressor            = errors.New("invalid or unknown compressor")
-	ErrInvalidCompressionLevel      = errors.New("invalid compression level")
-	ErrInvalidWindowSize            = errors.New("invalid window size")
-	ErrInvalidCompressionStrategies = errors.New("invalid compression strategies")
-	ErrNoCompressorOptions          = errors.New("no compressor options should be supplied")
-	ErrInvalidCompressionAlgorithm  = errors.New("invalid compression algorithm")
-	ErrInvalidDictionarySize        = errors.New("invalid dictionary size")
-	ErrInvalidFilters               = errors.New("invalid filters")
-	ErrInvalidCompressorVersion     = errors.New("invalid compressor version")
-	ErrInvalidCompressorFlags       = errors.New("invalid compressor flags")
-	ErrUnsupportedCompressor        = errors.New("unsupported compressor")
-)

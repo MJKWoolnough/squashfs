@@ -110,9 +110,3 @@ func (b *blockReader) Read(p []byte) (int, error) {
 
 	return n, err
 }
-
-var (
-	ErrInvalidPointer     = errors.New("invalid pointer")
-	ErrInvalidBlockHeader = errors.New("invalid block header")
-	ErrUnsupportedSeek    = errors.New("unsupported seek")
-)

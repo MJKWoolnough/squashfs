@@ -2,7 +2,6 @@
 package squashfs // import "vimagination.zapto.org/squashfs"
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -112,9 +111,3 @@ func Open(r io.ReaderAt) (FS, error) {
 func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
 	return s.resolve(path)
 }
-
-var (
-	ErrInvalidMagicNumber = errors.New("invalid magic number")
-	ErrInvalidBlockSize   = errors.New("invalid block size")
-	ErrInvalidVersion     = errors.New("invalid version")
-)
