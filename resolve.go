@@ -438,6 +438,7 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 
 	fullPath := fpath
 	cutAt := 0
+	redirectsRemaining := 1024
 
 	for fpath != "" {
 		slashPos := strings.Index(fpath, "/")
@@ -463,6 +464,12 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 				return nil, err
 			}
 		case symlinkStat:
+			redirectsRemaining--
+
+			if redirectsRemaining == 0 {
+				return nil, fs.ErrInvalid
+			}
+
 			if strings.HasPrefix(dir.targetPath, "/") {
 				fullPath = path.Clean(dir.targetPath)
 			} else {
