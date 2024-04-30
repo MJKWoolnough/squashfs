@@ -78,7 +78,19 @@ type squashfs struct {
 }
 
 func (s *squashfs) Open(path string) (fs.File, error) {
-	return nil, errors.New("unimplemented")
+	f, err := s.resolve(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if f, ok := f.(fileStat); ok {
+		return &file{
+			squashfs: s,
+			file:     f,
+		}, nil
+	}
+
+	return nil, fs.ErrInvalid
 }
 
 type FS interface {
