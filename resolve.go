@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"path"
 	"strings"
 	"time"
 
@@ -429,23 +430,26 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset, tota
 	}
 }
 
-func (s *squashfs) resolve(path string) (fs.FileInfo, error) {
+func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 	curr, err := s.getEntry(s.superblock.RootInode)
 	if err != nil {
 		return nil, err
 	}
 
-	for path != "" {
-		slashPos := strings.Index(path, "/")
+	fullPath := fpath
+	cutAt := 0
 
+	for fpath != "" {
+		slashPos := strings.Index(fpath, "/")
 		var name string
 
 		if slashPos == -1 {
-			name = path
-			path = ""
+			name = fpath
+			fpath = ""
 		} else {
-			name = path[:slashPos]
-			path = path[slashPos+1:]
+			name = fpath[:slashPos]
+			fpath = fpath[slashPos+1:]
+			cutAt += slashPos + 1
 		}
 
 		if name == "" {
@@ -458,6 +462,15 @@ func (s *squashfs) resolve(path string) (fs.FileInfo, error) {
 			if err != nil {
 				return nil, err
 			}
+		case symlinkStat:
+			if strings.HasPrefix(dir.targetPath, "/") {
+				fullPath = path.Clean(dir.targetPath)
+			} else {
+				fullPath = path.Join(fullPath[:cutAt], dir.targetPath, fpath)
+			}
+
+			fpath = fullPath
+			cutAt = 0
 		default:
 			return nil, fs.ErrInvalid
 		}
