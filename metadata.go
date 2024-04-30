@@ -79,11 +79,14 @@ func (b *blockReader) nextReader() error {
 }
 
 func (b *blockReader) init(skip int64) error {
-	if err := b.nextReader(); err != nil {
+	err := b.nextReader()
+	if err != nil {
 		return err
 	}
 
-	_, err := b.r.Seek(skip, io.SeekCurrent)
+	if skip > 0 {
+		_, err = b.r.Seek(skip, io.SeekCurrent)
+	}
 
 	return err
 }
