@@ -108,7 +108,7 @@ type dirExtStat struct {
 	index       []dirIndex
 }
 
-func readExtendedDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirExtStat {
+func readExtDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirExtStat {
 	d := dirExtStat{
 		commonStat:  common,
 		linkCount:   ler.ReadUint32(),
@@ -191,7 +191,7 @@ func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, bloc
 	return f
 }
 
-func readExtendedFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
+func readExtFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
 	f := fileStat{
 		commonStat:  common,
 		blocksStart: ler.ReadUint64(),
@@ -306,7 +306,7 @@ func readBasicFifo(ler *byteio.StickyLittleEndianReader, common commonStat) fifo
 	}
 }
 
-func readExtendedFifo(ler *byteio.StickyLittleEndianReader, common commonStat) fifoStat {
+func readExtFifo(ler *byteio.StickyLittleEndianReader, common commonStat) fifoStat {
 	return fifoStat{
 		commonStat: common,
 		linkCount:  ler.ReadUint32(),
@@ -362,7 +362,7 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	case inodeBasicFile:
 		fi = readBasicFile(&ler, common, s.superblock.BlockSize)
 	case inodeExtFile:
-		fi = readExtendedFile(&ler, common, s.superblock.BlockSize)
+		fi = readExtFile(&ler, common, s.superblock.BlockSize)
 	case inodeBasicSymlink:
 		fi = readBasicSymlink(&ler, common)
 	case inodeExtSymlink:
@@ -378,11 +378,11 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	case inodeBasicPipe:
 		fi = readBasicFifo(&ler, common)
 	case inodeExtPipe:
-		fi = readExtendedFifo(&ler, common)
+		fi = readExtFifo(&ler, common)
 	case inodeBasicSock:
 		fi = socketStat(readBasicFifo(&ler, common))
 	case inodeExtSock:
-		fi = socketStat(readExtendedFifo(&ler, common))
+		fi = socketStat(readExtFifo(&ler, common))
 	default:
 		return nil, errors.New("unimplemented")
 	}
