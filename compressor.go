@@ -12,6 +12,15 @@ import (
 
 type Compressor uint16
 
+const (
+	CompressorGZIP Compressor = 1
+	CompressorLZMA Compressor = 2
+	CompressorLZO  Compressor = 3
+	CompressorXZ   Compressor = 4
+	CompressorLZ4  Compressor = 5
+	CompressorZSTD Compressor = 6
+)
+
 func (c Compressor) String() string {
 	switch c {
 	case CompressorGZIP:
@@ -211,15 +220,6 @@ func defaultZStdOptions() *ZStdOptions {
 		CompressionLevel: 15,
 	}
 }
-
-const (
-	CompressorGZIP Compressor = 1
-	CompressorLZMA Compressor = 2
-	CompressorLZO  Compressor = 3
-	CompressorXZ   Compressor = 4
-	CompressorLZ4  Compressor = 5
-	CompressorZSTD Compressor = 6
-)
 
 var (
 	ErrInvalidCompressor            = errors.New("invalid or unknown compressor")
