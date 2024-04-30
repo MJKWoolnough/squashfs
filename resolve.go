@@ -385,7 +385,7 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	case inodeExtSock:
 		fi = socketStat(readExtFifo(&ler, common))
 	default:
-		return nil, errors.New("unimplemented")
+		return nil, fs.ErrInvalid
 	}
 
 	if ler.Err != nil {
