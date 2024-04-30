@@ -59,7 +59,7 @@ func TestOpen(t *testing.T) {
 			},
 		},
 		dir("dirA", []child{
-			file("fileA", contentsA),
+			fileData("fileA", contentsA),
 		}),
 	)
 }
@@ -119,7 +119,7 @@ func TestStat(t *testing.T) {
 		},
 		dir("dirA", []child{}, chmod(0o555)),
 		dir("dirB", []child{
-			file("fileA", contentsA),
+			fileData("fileA", contentsA),
 		}),
 	)
 }

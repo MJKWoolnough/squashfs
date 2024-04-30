@@ -163,7 +163,7 @@ func dir(name string, children []child, opts ...option) *directory {
 	return dir
 }
 
-func file(name string, contents string, opts ...option) *data {
+func fileData(name string, contents string, opts ...option) *data {
 	file := &data{
 		Header: tar.Header{
 			Name:     name,

@@ -9,7 +9,7 @@ func TestGetStats(t *testing.T) {
 	sqfs, err := buildSquashFS(
 		t,
 		dir("dirA", []child{
-			file("fileA", "my contents"),
+			fileData("fileA", "my contents"),
 		}),
 	)
 	if err != nil {
