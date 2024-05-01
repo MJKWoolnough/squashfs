@@ -180,6 +180,7 @@ func (f *fileStat) readBlocks(ler *byteio.StickyLittleEndianReader, blockSize ui
 
 func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, blockSize uint32) fileStat {
 	f := fileStat{
+		commonStat:  common,
 		blocksStart: uint64(ler.ReadUint32()),
 		fragIndex:   ler.ReadUint32(),
 		blockOffset: ler.ReadUint32(),
