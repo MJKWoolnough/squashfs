@@ -6,10 +6,15 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-const contentsA = "my contents"
+var (
+	contentsA = "my contents"
+	contentsB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	contentsC = strings.Repeat(contentsB+contentsA, 1024)
+)
 
 type testFn func(FS) error
 
@@ -61,6 +66,7 @@ func TestOpen(t *testing.T) {
 		},
 		dir("dirA", []child{
 			fileData("fileA", contentsA),
+			fileData("fileB", contentsC),
 		}),
 	)
 }
