@@ -60,6 +60,7 @@ func (f *file) Read(p []byte) (int, error) {
 				return 0, err
 			}
 
+			f.reader = io.LimitReader(f.reader, int64(f.file.fileSize)%int64(f.squashfs.superblock.BlockSize))
 		} else if f.reader, err = f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, int64(f.file.blocksStart)+int64(f.block)*int64(f.squashfs.superblock.BlockSize), int64(f.file.blockSizes[f.block]))); err != nil {
 			return 0, err
 		}
