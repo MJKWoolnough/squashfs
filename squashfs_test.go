@@ -3,6 +3,7 @@ package squashfs
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -114,12 +115,16 @@ func TestStat(t *testing.T) {
 					return fmt.Errorf("expecting size for file to be %d, got %d", len(contentsA), size)
 				}
 
+				if m := stats.Mode(); m != 0o600 {
+					return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o600), m)
+				}
+
 				return nil
 			},
 		},
 		dir("dirA", []child{}, chmod(0o555)),
 		dir("dirB", []child{
-			fileData("fileA", contentsA),
+			fileData("fileA", contentsA, chmod(0o600)),
 		}),
 	)
 }
