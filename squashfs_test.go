@@ -145,6 +145,18 @@ func TestStat(t *testing.T) {
 
 				return nil
 			},
+			func(sfs FS) error {
+				stats, err := sfs.Stat("/dirD/fileE")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
+
+				if m := stats.Mode(); m != 0o123 {
+					return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o123), m)
+				}
+
+				return nil
+			},
 		},
 		dir("dirA", []child{}, chmod(0o555)),
 		dir("dirB", []child{
@@ -156,6 +168,7 @@ func TestStat(t *testing.T) {
 		}),
 		dir("dirD", []child{
 			symlink("fileD", "../dirC/fileB", chmod(0o231)),
+			symlink("fileE", "/dirC/fileB", chmod(0o132)),
 		}),
 	)
 }
