@@ -466,22 +466,25 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			if sym, ok := curr.(symlinkStat); ok {
+				redirectsRemaining--
+
+				if redirectsRemaining == 0 {
+					return nil, fs.ErrInvalid
+				}
+
+				if strings.HasPrefix(sym.targetPath, "/") {
+					fullPath = path.Clean(sym.targetPath)
+				} else {
+					fullPath = path.Join(fullPath[:cutAt], sym.targetPath, fpath)
+				}
+
+				fpath = fullPath
+				cutAt = 0
+				curr = root
+			}
 		case symlinkStat:
-			redirectsRemaining--
-
-			if redirectsRemaining == 0 {
-				return nil, fs.ErrInvalid
-			}
-
-			if strings.HasPrefix(dir.targetPath, "/") {
-				fullPath = path.Clean(dir.targetPath)
-			} else {
-				fullPath = path.Join(fullPath[:cutAt], dir.targetPath, fpath)
-			}
-
-			fpath = fullPath
-			cutAt = 0
-			curr = root
 		default:
 			return nil, fs.ErrInvalid
 		}
