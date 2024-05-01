@@ -187,7 +187,7 @@ func symlink(name string, target string, opts ...option) *link {
 	symlink := &link{
 		Header: tar.Header{
 			Name:     name,
-			Typeflag: tar.TypeReg,
+			Typeflag: tar.TypeSymlink,
 			Mode:     0o555,
 			ModTime:  time.Now(),
 			Linkname: target,
