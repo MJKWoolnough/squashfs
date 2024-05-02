@@ -61,24 +61,31 @@ func (f *file) Read(p []byte) (int, error) {
 				f.reader = io.NewSectionReader(f.squashfs.reader, int64(start)+int64(f.file.blockOffset), int64(size^(1<<24)))
 			}
 
-		} else {
-			start := int64(f.file.blocksStart) + int64(f.block)*int64(f.squashfs.superblock.BlockSize)
+		} else if f.block < len(f.file.blockSizes) {
+			start := int64(f.file.blocksStart)
+
+			for _, size := range f.file.blockSizes[:f.block] {
+				start += int64(size & 0xeffffff)
+			}
+
 			size := int64(f.file.blockSizes[f.block])
 			if size&(1<<24) == 0 {
 				if f.reader, err = f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, start, size)); err != nil {
 					return 0, err
 				}
 			} else {
-				f.reader = io.NewSectionReader(f.squashfs.reader, start, size^(1<<24))
+				f.reader = io.NewSectionReader(f.squashfs.reader, start, size&0xeffffff)
 			}
+		} else {
+			return 0, io.EOF
 		}
 	}
 
 	n, err := f.reader.Read(p)
 
 	if errors.Is(err, io.EOF) {
-		f.block++
 		if f.block < len(f.file.blockSizes) {
+			f.block++
 			err = nil
 			f.reader = nil
 		}
