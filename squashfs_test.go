@@ -43,60 +43,36 @@ func test(t *testing.T, tests []testFn, children ...child) {
 	}
 }
 
+func readSqfsFile(sfs fs.FS, path, expectation string) error {
+	a, err := sfs.Open(path)
+	if err != nil {
+		return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
+	}
+
+	contents, err := io.ReadAll(a)
+	if err != nil {
+		return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
+	}
+
+	if string(contents) != expectation {
+		return fmt.Errorf("expected to read %q, got %q", expectation, contents)
+	}
+
+	return nil
+}
+
 func TestOpen(t *testing.T) {
 	test(
 		t,
 		[]testFn{
 			func(sfs FS) error {
-				a, err := sfs.Open(filepath.Join("/", "dirA", "fileA"))
-				if err != nil {
-					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
-				}
-
-				contents, err := io.ReadAll(a)
-				if err != nil {
-					return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
-				}
-
-				if string(contents) != contentsA {
-					return fmt.Errorf("expected to read %q, got %q", contentsA, contents)
-				}
-
-				return nil
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileA"), contentsA)
 			},
 			func(sfs FS) error {
-				a, err := sfs.Open(filepath.Join("/", "dirA", "fileB"))
-				if err != nil {
-					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
-				}
-
-				contents, err := io.ReadAll(a)
-				if err != nil {
-					return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
-				}
-
-				if string(contents) != contentsC {
-					return fmt.Errorf("expected to read %q, got %q", contentsC, contents)
-				}
-
-				return nil
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileB"), contentsC)
 			},
 			func(sfs FS) error {
-				a, err := sfs.Open(filepath.Join("/", "dirA", "fileC"))
-				if err != nil {
-					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
-				}
-
-				contents, err := io.ReadAll(a)
-				if err != nil {
-					return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
-				}
-
-				if string(contents) != contentsD {
-					return fmt.Errorf("expected to read %q, got %q", contentsD, contents)
-				}
-
-				return nil
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileC"), contentsD)
 			},
 		},
 		dir("dirA", []child{
