@@ -29,21 +29,21 @@ func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
 	return b, nil
 }
 
-type skipSeeker struct {
-	io.Reader
-}
+func skip(r io.Reader, count int64) error {
+	if s, ok := r.(io.Seeker); ok {
+		_, err := s.Seek(count, io.SeekCurrent)
 
-func (s *skipSeeker) Seek(offset int64, whence int) (int64, error) {
-	if whence != io.SeekCurrent {
-		return 0, ErrUnsupportedSeek
+		return err
 	}
 
-	return io.Copy(io.Discard, io.LimitReader(s, offset))
+	_, err := io.Copy(io.Discard, io.LimitReader(r, count))
+
+	return err
 }
 
 type blockReader struct {
 	*squashfs
-	r    io.ReadSeeker
+	r    io.Reader
 	next int64
 }
 
@@ -70,7 +70,7 @@ func (b *blockReader) nextReader() error {
 			return err
 		}
 
-		b.r = &skipSeeker{Reader: c}
+		b.r = c
 	}
 
 	b.next += int64(size)
@@ -78,14 +78,14 @@ func (b *blockReader) nextReader() error {
 	return nil
 }
 
-func (b *blockReader) init(skip int64) error {
+func (b *blockReader) init(skipCount int64) error {
 	err := b.nextReader()
 	if err != nil {
 		return err
 	}
 
-	if skip > 0 {
-		_, err = b.r.Seek(skip, io.SeekCurrent)
+	if skipCount > 0 {
+		return skip(b.r, skipCount)
 	}
 
 	return err
