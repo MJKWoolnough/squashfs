@@ -14,6 +14,7 @@ var (
 	contentsA = "my contents"
 	contentsB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	contentsC = strings.Repeat(contentsB+contentsA, 1024)
+	contentsD = strings.Repeat("ABCDEFGHIJKLMNOP", 8192)
 )
 
 type testFn func(FS) error
@@ -80,10 +81,28 @@ func TestOpen(t *testing.T) {
 
 				return nil
 			},
+			func(sfs FS) error {
+				a, err := sfs.Open(filepath.Join("/", "dirA", "fileC"))
+				if err != nil {
+					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
+				}
+
+				contents, err := io.ReadAll(a)
+				if err != nil {
+					return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
+				}
+
+				if string(contents) != contentsD {
+					return fmt.Errorf("expected to read %q, got %q", contentsD, contents)
+				}
+
+				return nil
+			},
 		},
 		dir("dirA", []child{
 			fileData("fileA", contentsA),
 			fileData("fileB", contentsC),
+			fileData("fileC", contentsD),
 		}),
 	)
 }
