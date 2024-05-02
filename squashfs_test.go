@@ -63,6 +63,23 @@ func TestOpen(t *testing.T) {
 
 				return nil
 			},
+			func(sfs FS) error {
+				a, err := sfs.Open(filepath.Join("/", "dirA", "fileB"))
+				if err != nil {
+					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
+				}
+
+				contents, err := io.ReadAll(a)
+				if err != nil {
+					return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
+				}
+
+				if string(contents) != contentsC {
+					return fmt.Errorf("expected to read %q, got %q", contentsC, contents)
+				}
+
+				return nil
+			},
 		},
 		dir("dirA", []child{
 			fileData("fileA", contentsA),
