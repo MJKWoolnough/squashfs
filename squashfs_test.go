@@ -12,10 +12,9 @@ import (
 
 var (
 	contentsA = "my contents"
-	contentsB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	contentsC = strings.Repeat(contentsB+contentsA, 1024)
-	contentsD = strings.Repeat("ABCDEFGHIJKLMNOP", 8192)
-	contentsE = strings.Repeat("ZYXWVUTSRQPONMLK", 16384)
+	contentsB = strings.Repeat("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"+contentsA, 1024)
+	contentsC = strings.Repeat("ABCDEFGHIJKLMNOP", 8192)
+	contentsD = strings.Repeat("ZYXWVUTSRQPONMLK", 16384)
 )
 
 type testFn func(FS) error
@@ -70,20 +69,20 @@ func TestOpen(t *testing.T) {
 				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileA"), contentsA)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileB"), contentsC)
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileB"), contentsB)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileC"), contentsD)
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileC"), contentsC)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileD"), contentsE)
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileD"), contentsD)
 			},
 		},
 		dir("dirA", []child{
 			fileData("fileA", contentsA),
-			fileData("fileB", contentsC),
-			fileData("fileC", contentsD),
-			fileData("fileD", contentsE),
+			fileData("fileB", contentsB),
+			fileData("fileC", contentsC),
+			fileData("fileD", contentsD),
 		}),
 	)
 }
