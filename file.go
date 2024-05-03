@@ -65,7 +65,9 @@ func (f *file) Read(p []byte) (int, error) {
 			}
 
 			if size&(1<<24) == 0 {
-				f.reader, err = f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, int64(start), int64(size)))
+				if f.reader, err = f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, int64(start), int64(size))); err != nil {
+					return 0, err
+				}
 
 				if err := skip(f.reader, int64(f.file.blockOffset)); err != nil {
 					return 0, err
