@@ -23,8 +23,6 @@ func (f *file) Read(p []byte) (int, error) {
 	defer f.mu.Unlock()
 
 	if f.reader == nil {
-		var err error
-
 		if f.block < len(f.file.blockSizes) {
 			start := int64(f.file.blocksStart)
 
@@ -32,6 +30,7 @@ func (f *file) Read(p []byte) (int, error) {
 				start += int64(size & 0xeffffff)
 			}
 
+			var err error
 			size := int64(f.file.blockSizes[f.block])
 			if size&(1<<24) == 0 {
 				if f.reader, err = f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, start, size)); err != nil {
