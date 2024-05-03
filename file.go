@@ -16,6 +16,8 @@ type file struct {
 	mu     sync.Mutex
 	block  int
 	reader io.Reader
+	pos    int64
+	skip   int64
 }
 
 func (f *file) Read(p []byte) (int, error) {
@@ -90,7 +92,18 @@ func (f *file) Read(p []byte) (int, error) {
 		}
 	}
 
+	if f.skip > 0 {
+		err := skip(f.reader, f.skip)
+		f.skip = 0
+
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	n, err := f.reader.Read(p)
+
+	f.pos += int64(n)
 
 	if errors.Is(err, io.EOF) {
 		if f.block < len(f.file.blockSizes) {
@@ -101,6 +114,34 @@ func (f *file) Read(p []byte) (int, error) {
 	}
 
 	return n, err
+}
+
+func (f *file) Seek(offset int64, whence int) (int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	var base int64
+
+	switch whence {
+	case io.SeekStart:
+	case io.SeekCurrent:
+		base = f.pos
+	case io.SeekEnd:
+		base = int64(f.file.fileSize)
+	default:
+		return f.pos, fs.ErrInvalid
+	}
+
+	base += offset
+
+	if base < 0 {
+		return f.pos, fs.ErrInvalid
+	}
+
+	f.block, f.skip = int(base/int64(f.squashfs.superblock.BlockSize)), base%int64(f.squashfs.superblock.BlockSize)
+	f.reader = nil
+
+	return base, nil
 }
 
 func (f *file) Stat() (fs.FileInfo, error) {
