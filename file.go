@@ -79,7 +79,6 @@ func (f *file) Read(p []byte) (int, error) {
 			} else {
 				f.reader = io.NewSectionReader(f.squashfs.reader, int64(start)+int64(f.file.blockOffset), fragmentSize)
 			}
-
 		} else {
 			return 0, io.EOF
 		}
