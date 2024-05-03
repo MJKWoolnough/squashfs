@@ -64,6 +64,12 @@ func (f *file) Read(p []byte) (int, error) {
 				return 0, err
 			}
 
+			if unused, _, err := ler.ReadUint32(); err != nil {
+				return 0, err
+			} else if unused != 0 {
+				return 0, fs.ErrInvalid
+			}
+
 			fragmentSize := int64(f.file.fileSize) % int64(f.squashfs.superblock.BlockSize)
 
 			if size&(1<<24) == 0 {
