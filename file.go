@@ -47,7 +47,7 @@ func (f *file) Read(p []byte) (int, error) {
 				return 0, err
 			}
 
-			r, err := f.squashfs.readMetadata((uint64(f.file.fragIndex)<<3)%8192, mdPos)
+			r, err := f.squashfs.readMetadata((uint64(f.file.fragIndex)<<4)%8192, mdPos)
 			if err != nil {
 				return 0, err
 			}
