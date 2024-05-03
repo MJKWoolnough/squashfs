@@ -15,6 +15,7 @@ var (
 	contentsB = strings.Repeat("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"+contentsA, 1024)
 	contentsC = strings.Repeat("ABCDEFGHIJKLMNOP", 8192)
 	contentsD = strings.Repeat("ZYXWVUTSRQPONMLK", 16384)
+	contentsE = contentsA + contentsD
 )
 
 type testFn func(FS) error
@@ -77,12 +78,16 @@ func TestOpen(t *testing.T) {
 			func(sfs FS) error {
 				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileD"), contentsD)
 			},
+			func(sfs FS) error {
+				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileE"), contentsE)
+			},
 		},
 		dir("dirA", []child{
 			fileData("fileA", contentsA),
 			fileData("fileB", contentsB),
 			fileData("fileC", contentsC),
 			fileData("fileD", contentsD),
+			fileData("fileE", contentsE),
 		}),
 	)
 }
