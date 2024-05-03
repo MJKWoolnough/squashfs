@@ -10,19 +10,23 @@ import (
 )
 
 type file struct {
-	squashfs *squashfs
-	file     fileStat
+	file fileStat
 
-	mu     sync.Mutex
-	block  int
-	reader io.Reader
-	pos    int64
-	skip   int64
+	mu       sync.Mutex
+	squashfs *squashfs
+	block    int
+	reader   io.Reader
+	pos      int64
+	skip     int64
 }
 
 func (f *file) Read(p []byte) (int, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
+	if f.squashfs == nil {
+		return 0, fs.ErrClosed
+	}
 
 	if f.reader == nil {
 		if f.block < len(f.file.blockSizes) {
@@ -120,6 +124,10 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
+	if f.squashfs == nil {
+		return 0, fs.ErrClosed
+	}
+
 	var base int64
 
 	switch whence {
@@ -149,5 +157,14 @@ func (f *file) Stat() (fs.FileInfo, error) {
 }
 
 func (f *file) Close() error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.squashfs == nil {
+		return fs.ErrClosed
+	}
+
+	f.squashfs = nil
+
 	return nil
 }
