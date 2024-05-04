@@ -164,6 +164,15 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 	return base, nil
 }
 
+func (f *file) ReadAt(p []byte, offset int64) (int, error) {
+	reader, err := f.getOffsetReader(offset)
+	if err != nil {
+		return 0, err
+	}
+
+	return reader.Read(p)
+}
+
 func (f *file) Stat() (fs.FileInfo, error) {
 	return f.file, nil
 }
