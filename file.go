@@ -177,6 +177,13 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (f *file) ReadAt(p []byte, offset int64) (int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.squashfs == nil {
+		return 0, fs.ErrClosed
+	}
+
 	reader, err := f.getOffsetReader(offset)
 	if err != nil {
 		return 0, err
