@@ -2,13 +2,13 @@
 package squashfs // import "vimagination.zapto.org/squashfs"
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
 	"time"
 
 	"vimagination.zapto.org/byteio"
-	"vimagination.zapto.org/memio"
 )
 
 type superblock struct {
@@ -32,9 +32,7 @@ func (s *superblock) readFrom(r io.Reader) error {
 		return err
 	}
 
-	mb := memio.Buffer(buf[:])
-
-	ler := byteio.StickyLittleEndianReader{Reader: &mb}
+	ler := byteio.StickyLittleEndianReader{Reader: bytes.NewBuffer(buf[:])}
 
 	if ler.ReadUint32() != 0x73717368 {
 		return ErrInvalidMagicNumber
