@@ -17,7 +17,6 @@ var (
 
 	ErrInvalidPointer     = errors.New("invalid pointer")
 	ErrInvalidBlockHeader = errors.New("invalid block header")
-	ErrUnsupportedSeek    = errors.New("unsupported seek")
 
 	ErrInvalidMagicNumber = errors.New("invalid magic number")
 	ErrInvalidBlockSize   = errors.New("invalid block size")
