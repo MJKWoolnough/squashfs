@@ -104,7 +104,7 @@ func (f *file) getFragmentReader() (io.Reader, error) {
 		return nil, err
 	}
 
-	r, err := f.squashfs.readMetadata((uint64(f.file.fragIndex)<<4)%8192, mdPos)
+	r, err := f.squashfs.readMetadata((uint64(f.file.fragIndex)<<4)%blockSize, mdPos)
 	if err != nil {
 		return nil, err
 	}

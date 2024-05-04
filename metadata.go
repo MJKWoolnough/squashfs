@@ -7,13 +7,13 @@ import (
 	"vimagination.zapto.org/byteio"
 )
 
-const maxBlockSize = 1 << 13
+const blockSize = 1 << 13
 
 func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
 	onDisk := int64(table + (pointer >> 16))
 
 	pos := int64(pointer & 0xffff)
-	if pos > maxBlockSize {
+	if pos > blockSize {
 		return nil, ErrInvalidPointer
 	}
 
@@ -58,7 +58,7 @@ func (b *blockReader) nextReader() error {
 
 	size := int64(header & 0x7fff)
 
-	if size > maxBlockSize {
+	if size > blockSize {
 		return ErrInvalidBlockHeader
 	}
 
