@@ -14,10 +14,8 @@ type file struct {
 
 	mu       sync.Mutex
 	squashfs *squashfs
-	block    int
 	reader   io.Reader
 	pos      int64
-	skip     int64
 }
 
 func (f *file) Read(p []byte) (int, error) {
@@ -29,7 +27,7 @@ func (f *file) Read(p []byte) (int, error) {
 	}
 
 	if f.reader == nil {
-		reader, err := f.getReader(f.block)
+		reader, err := f.getOffsetReader(f.pos)
 		if err != nil {
 			return 0, err
 		}
@@ -37,28 +35,36 @@ func (f *file) Read(p []byte) (int, error) {
 		f.reader = reader
 	}
 
-	if f.skip > 0 {
-		err := skip(f.reader, f.skip)
-		f.skip = 0
-
-		if err != nil {
-			return 0, err
-		}
-	}
-
 	n, err := f.reader.Read(p)
 
 	f.pos += int64(n)
 
 	if errors.Is(err, io.EOF) {
-		if f.block < len(f.file.blockSizes) {
-			f.block++
+		if uint64(f.pos) < f.file.fileSize {
 			err = nil
 			f.reader = nil
 		}
 	}
 
 	return n, err
+}
+
+func (f *file) getOffsetReader(pos int64) (io.Reader, error) {
+	block, skipBytes := int(pos/int64(f.squashfs.superblock.BlockSize)), pos%int64(f.squashfs.superblock.BlockSize)
+
+	reader, err := f.getReader(block)
+	if err != nil {
+		return nil, err
+	}
+
+	if skipBytes > 0 {
+		err = skip(reader, skipBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return reader, nil
 }
 
 func (f *file) getReader(block int) (io.Reader, error) {
@@ -147,13 +153,12 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		return f.pos, fs.ErrInvalid
 	}
 
-	base += offset
+	f.pos = base + offset
 
-	if base < 0 {
+	if f.pos < 0 {
 		return f.pos, fs.ErrInvalid
 	}
 
-	f.block, f.skip = int(base/int64(f.squashfs.superblock.BlockSize)), base%int64(f.squashfs.superblock.BlockSize)
 	f.reader = nil
 
 	return base, nil
