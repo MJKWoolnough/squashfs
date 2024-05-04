@@ -79,8 +79,7 @@ func (b *blockReader) nextReader() error {
 }
 
 func (b *blockReader) init(skipCount int64) error {
-	err := b.nextReader()
-	if err != nil {
+	if err := b.nextReader(); err != nil {
 		return err
 	}
 
@@ -88,7 +87,7 @@ func (b *blockReader) init(skipCount int64) error {
 		return skip(b.r, skipCount)
 	}
 
-	return err
+	return nil
 }
 
 func (b *blockReader) Read(p []byte) (int, error) {
