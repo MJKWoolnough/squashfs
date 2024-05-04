@@ -50,6 +50,10 @@ func (f *file) Read(p []byte) (int, error) {
 }
 
 func (f *file) getOffsetReader(pos int64) (io.Reader, error) {
+	if uint64(pos) >= f.file.fileSize {
+		return nil, io.ErrUnexpectedEOF
+	}
+
 	block, skipBytes := int(pos/int64(f.squashfs.superblock.BlockSize)), pos%int64(f.squashfs.superblock.BlockSize)
 
 	reader, err := f.getReader(block)
