@@ -24,6 +24,8 @@ var (
 type testFn func(FS) error
 
 func test(t *testing.T, tests []testFn, children ...child) {
+	t.Helper()
+
 	sqfs, err := buildSquashFS(t, children...)
 	if err != nil {
 		t.Fatalf("unexpected error creating squashfs file: %s", err)
