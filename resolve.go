@@ -451,8 +451,8 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 
 	for fpath != "" {
 		slashPos := strings.Index(fpath, "/")
-		var name string
 
+		var name string
 		if slashPos == -1 {
 			name = fpath
 			fpath = ""
