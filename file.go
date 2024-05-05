@@ -96,35 +96,44 @@ func (f *file) getBlockReader(block int) (io.Reader, error) {
 	return io.NewSectionReader(f.squashfs.reader, start, size&0xeffffff), nil
 }
 
-func (f *file) getFragmentReader() (io.Reader, error) {
+func (f *file) getFragmentDetails() (start uint64, size uint32, err error) {
 	ler := byteio.LittleEndianReader{Reader: io.NewSectionReader(f.squashfs.reader, int64(f.squashfs.superblock.FragTable)+int64(f.file.fragIndex>>10), 8)}
 
 	mdPos, _, err := ler.ReadUint64()
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
 
 	r, err := f.squashfs.readMetadata((uint64(f.file.fragIndex)<<4)%blockSize, mdPos)
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
 
 	ler = byteio.LittleEndianReader{Reader: r}
 
-	start, _, err := ler.ReadUint64()
+	start, _, err = ler.ReadUint64()
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
 
-	size, _, err := ler.ReadUint32()
+	size, _, err = ler.ReadUint32()
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
 
 	if unused, _, err := ler.ReadUint32(); err != nil {
-		return nil, err
+		return 0, 0, err
 	} else if unused != 0 {
-		return nil, fs.ErrInvalid
+		return 0, 0, fs.ErrInvalid
+	}
+
+	return start, size, nil
+}
+
+func (f *file) getFragmentReader() (io.Reader, error) {
+	start, size, err := f.getFragmentDetails()
+	if err != nil {
+		return nil, err
 	}
 
 	fragmentSize := int64(f.file.fileSize) % int64(f.squashfs.superblock.BlockSize)
