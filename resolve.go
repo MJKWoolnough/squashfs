@@ -334,6 +334,43 @@ func (s socketStat) Sys() any {
 	return s
 }
 
+func (s *squashfs) readEntry(ler *byteio.StickyLittleEndianReader, typ uint16, common commonStat) fs.FileInfo {
+	switch typ {
+	case inodeBasicDir:
+		return readBasicDir(ler, common)
+	case inodeExtDir:
+		return readExtDir(ler, common)
+	case inodeBasicFile:
+		return readBasicFile(ler, common, s.superblock.BlockSize)
+	case inodeExtFile:
+		return readExtFile(ler, common, s.superblock.BlockSize)
+	case inodeBasicSymlink:
+		return readBasicSymlink(ler, common)
+	case inodeExtSymlink:
+		return readExtSymlink(ler, common)
+	case inodeBasicBlock:
+		return readBasicBlock(ler, common)
+	case inodeExtBlock:
+		return readExtBlock(ler, common)
+	case inodeBasicChar:
+		return charStat(readBasicBlock(ler, common))
+	case inodeExtChar:
+		return charStat(readExtBlock(ler, common))
+	case inodeBasicPipe:
+		return readBasicFifo(ler, common)
+	case inodeExtPipe:
+		return readExtFifo(ler, common)
+	case inodeBasicSock:
+		return socketStat(readBasicFifo(ler, common))
+	case inodeExtSock:
+		return socketStat(readExtFifo(ler, common))
+	default:
+		ler.Err = fs.ErrInvalid
+
+		return nil
+	}
+}
+
 func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
@@ -356,40 +393,7 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 		mtime: time.Unix(int64(mtime), 0),
 	}
 
-	var fi fs.FileInfo
-
-	switch typ {
-	case inodeBasicDir:
-		fi = readBasicDir(&ler, common)
-	case inodeExtDir:
-		fi = readExtDir(&ler, common)
-	case inodeBasicFile:
-		fi = readBasicFile(&ler, common, s.superblock.BlockSize)
-	case inodeExtFile:
-		fi = readExtFile(&ler, common, s.superblock.BlockSize)
-	case inodeBasicSymlink:
-		fi = readBasicSymlink(&ler, common)
-	case inodeExtSymlink:
-		fi = readExtSymlink(&ler, common)
-	case inodeBasicBlock:
-		fi = readBasicBlock(&ler, common)
-	case inodeExtBlock:
-		fi = readExtBlock(&ler, common)
-	case inodeBasicChar:
-		fi = charStat(readBasicBlock(&ler, common))
-	case inodeExtChar:
-		fi = charStat(readExtBlock(&ler, common))
-	case inodeBasicPipe:
-		fi = readBasicFifo(&ler, common)
-	case inodeExtPipe:
-		fi = readExtFifo(&ler, common)
-	case inodeBasicSock:
-		fi = socketStat(readBasicFifo(&ler, common))
-	case inodeExtSock:
-		fi = socketStat(readExtFifo(&ler, common))
-	default:
-		return nil, fs.ErrInvalid
-	}
+	fi := s.readEntry(&ler, typ, common)
 
 	if ler.Err != nil {
 		return nil, ler.Err
