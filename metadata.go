@@ -97,7 +97,7 @@ func (b *blockReader) Read(p []byte) (int, error) {
 			return n, err
 		}
 
-		if err := b.nextReader(); err != nil {
+		if err = b.nextReader(); err != nil {
 			return n, err
 		}
 
