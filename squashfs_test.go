@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -16,6 +17,8 @@ var (
 	contentsC = strings.Repeat("ABCDEFGHIJKLMNOP", 8192)
 	contentsD = strings.Repeat("ZYXWVUTSRQPONMLK", 16384)
 	contentsE = contentsA + contentsD
+
+	timestamp = time.Unix(1234567, 0)
 )
 
 type testFn func(FS) error
@@ -146,6 +149,10 @@ func TestStat(t *testing.T) {
 					return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o777), m)
 				}
 
+				if time := stats.ModTime(); time.Sub(timestamp) != 0 {
+					return fmt.Errorf("expecting modtime %s, got %s", timestamp, time)
+				}
+
 				return nil
 			},
 			func(sfs FS) error {
@@ -187,7 +194,7 @@ func TestStat(t *testing.T) {
 		},
 		dir("dirA", []child{}, chmod(0o555)),
 		dir("dirB", []child{
-			fileData("fileA", contentsA, chmod(0o600)),
+			fileData("fileA", contentsA, chmod(0o600), modtime(timestamp)),
 		}),
 		dir("dirC", []child{
 			fileData("fileB", contentsA, chmod(0o123)),
