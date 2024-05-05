@@ -361,6 +361,8 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	switch typ {
 	case inodeBasicDir:
 		fi = readBasicDir(&ler, common)
+	case inodeExtDir:
+		fi = readExtDir(&ler, common)
 	case inodeBasicFile:
 		fi = readBasicFile(&ler, common, s.superblock.BlockSize)
 	case inodeExtFile:
