@@ -73,7 +73,7 @@ func (b *blockReader) nextReader() error {
 		b.r = c
 	}
 
-	b.next += int64(size)
+	b.next += size
 
 	return nil
 }
