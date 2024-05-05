@@ -160,11 +160,13 @@ type fileStat struct {
 	blockSizes  []uint32
 }
 
+const fieldDisabled = 0xFFFFFFFF
+
 func (f *fileStat) readBlocks(ler *byteio.StickyLittleEndianReader, blockSize uint32) {
 	var blockCount uint64
 
 	if f.fileSize > 0 {
-		if f.fragIndex == 0xFFFFFFFF {
+		if f.fragIndex == fieldDisabled {
 			blockCount = 1 + (f.fileSize-1)/uint64(blockSize)
 		} else {
 			blockCount = f.fileSize / uint64(blockSize)
@@ -185,7 +187,7 @@ func readBasicFile(ler *byteio.StickyLittleEndianReader, common commonStat, bloc
 		fragIndex:   ler.ReadUint32(),
 		blockOffset: ler.ReadUint32(),
 		fileSize:    uint64(ler.ReadUint32()),
-		xattrIndex:  0xFFFFFFFF,
+		xattrIndex:  fieldDisabled,
 	}
 
 	f.readBlocks(ler, blockSize)
@@ -230,7 +232,7 @@ func readBasicSymlink(ler *byteio.StickyLittleEndianReader, common commonStat) s
 		commonStat: common,
 		linkCount:  ler.ReadUint32(),
 		targetPath: ler.ReadString(int(ler.ReadUint32())),
-		xattrIndex: 0xFFFFFFFF,
+		xattrIndex: fieldDisabled,
 	}
 }
 
@@ -263,7 +265,7 @@ func readBasicBlock(ler *byteio.StickyLittleEndianReader, common commonStat) blo
 		commonStat:   common,
 		linkCount:    ler.ReadUint32(),
 		deviceNumber: ler.ReadUint32(),
-		xattrIndex:   0xFFFFFFFF,
+		xattrIndex:   fieldDisabled,
 	}
 }
 
@@ -304,7 +306,7 @@ func readBasicFifo(ler *byteio.StickyLittleEndianReader, common commonStat) fifo
 	return fifoStat{
 		commonStat: common,
 		linkCount:  ler.ReadUint32(),
-		xattrIndex: 0xFFFFFFFF,
+		xattrIndex: fieldDisabled,
 	}
 }
 
