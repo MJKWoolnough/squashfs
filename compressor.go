@@ -43,9 +43,9 @@ func (c Compressor) decompress(r io.Reader) (io.Reader, error) {
 	switch c {
 	case CompressorGZIP:
 		return zlib.NewReader(r)
+	default:
+		return nil, fmt.Errorf("%s: %w", c, ErrUnsupportedCompressor)
 	}
-
-	return nil, fmt.Errorf("%s: %w", c, ErrUnsupportedCompressor)
 }
 
 type CompressorOptions any
