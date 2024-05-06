@@ -81,7 +81,11 @@ func (f *file) getOffsetReader(pos int64) (io.Reader, error) {
 	return reader, nil
 }
 
-const sizeMask = 0xeffffff
+const (
+	sizeMask           = 0x00ffffff
+	compressionMask    = 0xff000000
+	fragmentIndexShift = 4
+)
 
 func (f *file) getBlockReader(block int) (io.Reader, error) {
 	start := int64(f.file.blocksStart)
@@ -91,7 +95,7 @@ func (f *file) getBlockReader(block int) (io.Reader, error) {
 	}
 
 	size := int64(f.file.blockSizes[block])
-	if size&(1<<24) == 0 {
+	if size&compressionMask == 0 {
 		return f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, start, size))
 	}
 
@@ -102,11 +106,12 @@ func (f *file) getFragmentDetails() (start uint64, size uint32, err error) {
 	ler := byteio.StickyLittleEndianReader{Reader: io.NewSectionReader(f.squashfs.reader, int64(f.squashfs.superblock.FragTable)+int64(f.file.fragIndex>>10), 8)}
 
 	mdPos := ler.ReadUint64()
+
 	if ler.Err != nil {
 		return 0, 0, ler.Err
 	}
 
-	ler.Reader, ler.Err = f.squashfs.readMetadata((uint64(f.file.fragIndex)<<4)%blockSize, mdPos)
+	ler.Reader, ler.Err = f.squashfs.readMetadata((uint64(f.file.fragIndex)<<fragmentIndexShift)%blockSize, mdPos)
 
 	start = ler.ReadUint64()
 	size = ler.ReadUint32()
@@ -126,7 +131,7 @@ func (f *file) getFragmentReader() (io.Reader, error) {
 
 	fragmentSize := int64(f.file.fileSize) % int64(f.squashfs.superblock.BlockSize)
 
-	if size&(1<<24) == 0 {
+	if size&compressionMask == 0 {
 		reader, err := f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, int64(start), int64(size)))
 		if err != nil {
 			return nil, err
