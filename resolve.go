@@ -468,33 +468,31 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 			continue
 		}
 
-		switch dir := curr.(type) {
-		case dirStat:
-			curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize)
-			if err != nil {
-				return nil, err
-			}
-
-			if sym, ok := curr.(symlinkStat); ok {
-				redirectsRemaining--
-
-				if redirectsRemaining == 0 {
-					return nil, fs.ErrInvalid
-				}
-
-				if strings.HasPrefix(sym.targetPath, "/") {
-					fullPath = path.Clean(sym.targetPath)
-				} else {
-					fullPath = path.Join(fullPath[:cutAt], sym.targetPath, fpath)
-				}
-
-				fpath = fullPath
-				cutAt = 0
-				curr = root
-			}
-		case symlinkStat:
-		default:
+		dir, ok := curr.(dirStat)
+		if !ok {
 			return nil, fs.ErrInvalid
+		}
+
+		if curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize); err != nil {
+			return nil, err
+		}
+
+		if sym, ok := curr.(symlinkStat); ok {
+			redirectsRemaining--
+
+			if redirectsRemaining == 0 {
+				return nil, fs.ErrInvalid
+			}
+
+			if strings.HasPrefix(sym.targetPath, "/") {
+				fullPath = path.Clean(sym.targetPath)
+			} else {
+				fullPath = path.Join(fullPath[:cutAt], sym.targetPath, fpath)
+			}
+
+			fpath = fullPath
+			cutAt = 0
+			curr = root
 		}
 	}
 
