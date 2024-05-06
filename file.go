@@ -52,7 +52,7 @@ func (f *file) Read(p []byte) (int, error) {
 func (f *file) getReader(block int) (io.Reader, error) {
 	if block < len(f.file.blockSizes) {
 		return f.getBlockReader(block)
-	} else if f.file.fragIndex != 0xFFFFFFFF {
+	} else if f.file.fragIndex != fieldDisabled {
 		return f.getFragmentReader()
 	}
 
@@ -81,11 +81,13 @@ func (f *file) getOffsetReader(pos int64) (io.Reader, error) {
 	return reader, nil
 }
 
+const sizeMask = 0xeffffff
+
 func (f *file) getBlockReader(block int) (io.Reader, error) {
 	start := int64(f.file.blocksStart)
 
 	for _, size := range f.file.blockSizes[:block] {
-		start += int64(size & 0xeffffff)
+		start += int64(size & sizeMask)
 	}
 
 	size := int64(f.file.blockSizes[block])
@@ -93,7 +95,7 @@ func (f *file) getBlockReader(block int) (io.Reader, error) {
 		return f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, start, size))
 	}
 
-	return io.NewSectionReader(f.squashfs.reader, start, size&0xeffffff), nil
+	return io.NewSectionReader(f.squashfs.reader, start, size&sizeMask), nil
 }
 
 func (f *file) getFragmentDetails() (start uint64, size uint32, err error) {
