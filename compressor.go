@@ -91,14 +91,19 @@ type GZipOptions struct {
 	Strategies       uint16
 }
 
+const (
+	minimumWindowSize = 8
+	maximumWindowSize = 15
+)
+
 func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error) {
 	compressionlevel := ler.ReadUint32()
-	if compressionlevel == 0 || compressionlevel > 9 {
+	if compressionlevel == 0 || compressionlevel > zlib.BestCompression {
 		return nil, ErrInvalidCompressionLevel
 	}
 
 	windowsize := ler.ReadUint16()
-	if windowsize < 8 || windowsize > 15 {
+	if windowsize < minimumWindowSize || windowsize > maximumWindowSize {
 		return nil, ErrInvalidWindowSize
 	}
 
@@ -116,8 +121,8 @@ func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error
 
 func defaultGzipOptions() *GZipOptions {
 	return &GZipOptions{
-		CompressionLevel: 9,
-		WindowSize:       15,
+		CompressionLevel: zlib.BestCompression,
+		WindowSize:       maximumWindowSize,
 	}
 }
 
@@ -133,7 +138,7 @@ func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (*LZOOptions, error) 
 	}
 
 	compressionlevel := ler.ReadUint32()
-	if compressionlevel > 9 || algorithm != 4 && compressionlevel != 0 {
+	if compressionlevel > zlib.BestCompression || algorithm != 4 && compressionlevel != 0 {
 		return nil, ErrInvalidCompressionLevel
 	}
 
@@ -155,9 +160,11 @@ type XZOptions struct {
 	Filters        uint32
 }
 
+const maxDictionarySize = 8192
+
 func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
 	dictionarysize := ler.ReadUint32()
-	if lead, trail := bits.LeadingZeros32(dictionarysize), bits.TrailingZeros32(dictionarysize); dictionarysize < 8192 || 32-trail-lead > 2 {
+	if lead, trail := bits.LeadingZeros32(dictionarysize), bits.TrailingZeros32(dictionarysize); dictionarysize < maxDictionarySize || 32-trail-lead > 2 {
 		return nil, ErrInvalidDictionarySize
 	}
 
@@ -174,7 +181,7 @@ func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
 
 func defaultXZOptions() *XZOptions {
 	return &XZOptions{
-		DictionarySize: 8192,
+		DictionarySize: maxDictionarySize,
 	}
 }
 
@@ -216,6 +223,6 @@ func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (*ZStdOptions, error
 
 func defaultZStdOptions() *ZStdOptions {
 	return &ZStdOptions{
-		CompressionLevel: 15,
+		CompressionLevel: zlib.BestCompression,
 	}
 }
