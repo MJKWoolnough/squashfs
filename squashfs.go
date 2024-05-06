@@ -94,6 +94,11 @@ type FS interface {
 	fs.StatFS
 }
 
+// Open reads the passed io.ReaderAt as a SquashFS image, returning a fs.FS
+// implementation.
+//
+// The returned fs.FS, and any files opened from it will cease to work if the
+// io.ReaderAt is closed.
 func Open(r io.ReaderAt) (FS, error) {
 	var sb superblock
 	if err := sb.readFrom(io.NewSectionReader(r, 0, 104)); err != nil {
