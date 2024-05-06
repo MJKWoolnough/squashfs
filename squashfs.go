@@ -11,7 +11,10 @@ import (
 	"vimagination.zapto.org/byteio"
 )
 
-const headerLength = 104
+const (
+	headerLength = 104
+	magic        = 0x73717368 // hsqs
+)
 
 type superblock struct {
 	Stats
@@ -36,7 +39,7 @@ func (s *superblock) readFrom(r io.Reader) error {
 
 	ler := byteio.StickyLittleEndianReader{Reader: bytes.NewBuffer(buf[:])}
 
-	if ler.ReadUint32() != 0x73717368 {
+	if ler.ReadUint32() != magic {
 		return ErrInvalidMagicNumber
 	}
 
