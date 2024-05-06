@@ -7,12 +7,21 @@ import (
 	"vimagination.zapto.org/byteio"
 )
 
-const blockSize = 1 << 13
+const (
+	blockSize       = 1 << 13
+	blockHeaderSize = 2
+
+	metadataPointerShift = 16
+	metadataPointerMask  = 0xffff
+
+	metadataBlockSizeMask       = 0x7fff
+	metadataBlockCompressedMask = 0x8000
+)
 
 func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
-	onDisk := int64(table + (pointer >> 16))
+	onDisk := int64(table + (pointer >> metadataPointerShift))
 
-	pos := int64(pointer & 0xffff)
+	pos := int64(pointer & metadataPointerMask)
 	if pos > blockSize {
 		return nil, ErrInvalidPointer
 	}
@@ -48,7 +57,7 @@ type blockReader struct {
 }
 
 func (b *blockReader) nextReader() error {
-	r := io.NewSectionReader(b.reader, b.next, 2)
+	r := io.NewSectionReader(b.reader, b.next, blockHeaderSize)
 	ler := byteio.LittleEndianReader{Reader: r}
 
 	header, _, err := ler.ReadUint16()
@@ -56,15 +65,15 @@ func (b *blockReader) nextReader() error {
 		return err
 	}
 
-	size := int64(header & 0x7fff)
+	size := int64(header & metadataBlockSizeMask)
 
 	if size > blockSize {
 		return ErrInvalidBlockHeader
 	}
 
-	b.r = io.NewSectionReader(b.reader, b.next+2, size)
+	b.r = io.NewSectionReader(b.reader, b.next+blockHeaderSize, size)
 
-	if header>>15 == 0 {
+	if header&metadataBlockCompressedMask == 0 {
 		c, err := b.squashfs.superblock.Compressor.decompress(b.r)
 		if err != nil {
 			return err
