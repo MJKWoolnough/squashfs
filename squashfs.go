@@ -11,6 +11,8 @@ import (
 	"vimagination.zapto.org/byteio"
 )
 
+const headerLength = 104
+
 type superblock struct {
 	Stats
 	IDCount            uint16
@@ -25,7 +27,7 @@ type superblock struct {
 }
 
 func (s *superblock) readFrom(r io.Reader) error {
-	var buf [104]byte
+	var buf [headerLength]byte
 
 	_, err := io.ReadFull(r, buf[:])
 	if err != nil {
@@ -101,7 +103,7 @@ type FS interface {
 // io.ReaderAt is closed.
 func Open(r io.ReaderAt) (FS, error) {
 	var sb superblock
-	if err := sb.readFrom(io.NewSectionReader(r, 0, 104)); err != nil {
+	if err := sb.readFrom(io.NewSectionReader(r, 0, headerLength)); err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
 	}
 
