@@ -73,12 +73,16 @@ func (f *file) getReader(block int) (io.Reader, error) {
 	return nil, io.EOF
 }
 
+func (f *file) getBlockOffset(pos int64) (int, int64) {
+	return int(pos / int64(f.squashfs.superblock.BlockSize)), pos % int64(f.squashfs.superblock.BlockSize)
+}
+
 func (f *file) getOffsetReader(pos int64) (io.Reader, error) {
 	if uint64(pos) >= f.file.fileSize {
 		return nil, io.ErrUnexpectedEOF
 	}
 
-	block, skipBytes := int(pos/int64(f.squashfs.superblock.BlockSize)), pos%int64(f.squashfs.superblock.BlockSize)
+	block, skipBytes := f.getBlockOffset(pos)
 
 	reader, err := f.getReader(block)
 	if err != nil {
