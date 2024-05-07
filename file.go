@@ -181,12 +181,13 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		return f.pos, fs.ErrInvalid
 	}
 
-	f.pos = base + offset
+	base += offset
 
-	if f.pos < 0 {
+	if base < 0 {
 		return f.pos, fs.ErrInvalid
 	}
 
+	f.pos = base
 	f.reader = nil
 
 	return base, nil
