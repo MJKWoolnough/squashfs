@@ -97,6 +97,48 @@ func TestOpenRead(t *testing.T) {
 	)
 }
 
+var offsetReadTests = [...]struct {
+	Start, Length int64
+	Expectation   string
+}{
+	{
+		0, 10,
+		contentsE[:10],
+	},
+	{
+		0, 100,
+		contentsE[:100],
+	},
+	{
+		0, 1000,
+		contentsE[:1000],
+	},
+	{
+		100, 10,
+		contentsE[100:110],
+	},
+	{
+		100, 100,
+		contentsE[100:200],
+	},
+	{
+		100, 1000,
+		contentsE[100:1100],
+	},
+	{
+		0, 1 << 15,
+		contentsE[:1<<15],
+	},
+	{
+		1, 1 << 15,
+		contentsE[1 : 1+1<<15],
+	},
+	{
+		int64(len(contentsE)) - 1000, 1000,
+		contentsE[len(contentsE)-1000:],
+	},
+}
+
 func TestOpenReadAt(t *testing.T) {
 	var buf [1 << 15]byte
 
@@ -114,47 +156,7 @@ func TestOpenReadAt(t *testing.T) {
 					return fmt.Errorf("didn't get io.ReaderAt")
 				}
 
-				for n, test := range [...]struct {
-					Start, Length int64
-					Expectation   string
-				}{
-					{
-						0, 10,
-						contentsE[:10],
-					},
-					{
-						0, 100,
-						contentsE[:100],
-					},
-					{
-						0, 1000,
-						contentsE[:1000],
-					},
-					{
-						100, 10,
-						contentsE[100:110],
-					},
-					{
-						100, 100,
-						contentsE[100:200],
-					},
-					{
-						100, 1000,
-						contentsE[100:1100],
-					},
-					{
-						0, 1 << 15,
-						contentsE[:1<<15],
-					},
-					{
-						1, 1 << 15,
-						contentsE[1 : 1+1<<15],
-					},
-					{
-						int64(len(contentsE)) - 1000, 1000,
-						contentsE[len(contentsE)-1000:],
-					},
-				} {
+				for n, test := range offsetReadTests {
 					m, err := r.ReadAt(buf[:test.Length], test.Start)
 					if err != nil {
 						return fmt.Errorf("test %d: %w", n+1, err)
@@ -191,47 +193,7 @@ func TestSeek(t *testing.T) {
 					return fmt.Errorf("didn't get io.ReaderAt")
 				}
 
-				for n, test := range [...]struct {
-					Start, Length int64
-					Expectation   string
-				}{
-					{
-						0, 10,
-						contentsE[:10],
-					},
-					{
-						0, 100,
-						contentsE[:100],
-					},
-					{
-						0, 1000,
-						contentsE[:1000],
-					},
-					{
-						100, 10,
-						contentsE[100:110],
-					},
-					{
-						100, 100,
-						contentsE[100:200],
-					},
-					{
-						100, 1000,
-						contentsE[100:1100],
-					},
-					{
-						0, 1 << 15,
-						contentsE[:1<<15],
-					},
-					{
-						1, 1 << 15,
-						contentsE[1 : 1+1<<15],
-					},
-					{
-						int64(len(contentsE)) - 1000, 1000,
-						contentsE[len(contentsE)-1000:],
-					},
-				} {
+				for n, test := range offsetReadTests {
 					for s, seek := range [...]struct {
 						Offset int64
 						Whence int
