@@ -46,16 +46,17 @@ func (f *file) read(p []byte) (int, error) {
 	if errors.Is(err, io.EOF) {
 		if uint64(f.pos) < f.file.fileSize {
 			f.reader = nil
+			err = nil
+		}
+	}
 
-			if n < len(p) {
-				var m int
+	if err == nil {
+		if n < len(p) {
+			var m int
 
-				m, err = f.read(p[n:])
+			m, err = f.read(p[n:])
 
-				n += m
-			} else {
-				err = nil
-			}
+			n += m
 		}
 	}
 
@@ -193,18 +194,20 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 
 func (f *file) ReadAt(p []byte, offset int64) (int, error) {
 	f.mu.Lock()
-	defer f.mu.Unlock()
+	sqfs := f.squashfs
+	f.mu.Unlock()
 
-	if f.squashfs == nil {
+	if sqfs == nil {
 		return 0, fs.ErrClosed
 	}
 
-	reader, err := f.getOffsetReader(offset)
-	if err != nil {
-		return 0, err
+	g := file{
+		file:     f.file,
+		squashfs: sqfs,
+		pos:      offset,
 	}
 
-	return reader.Read(p)
+	return g.read(p)
 }
 
 func (f *file) Stat() (fs.FileInfo, error) {
