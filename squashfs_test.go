@@ -97,6 +97,71 @@ func TestOpenRead(t *testing.T) {
 	)
 }
 
+func TestOpenReadAt(t *testing.T) {
+	var buf [1024]byte
+
+	test(
+		t,
+		[]testFn{
+			func(sfs FS) error {
+				a, err := sfs.Open("/dirA/fileE")
+				if err != nil {
+					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
+				}
+
+				r, ok := a.(io.ReaderAt)
+				if !ok {
+					return fmt.Errorf("didn't get io.ReaderAt")
+				}
+
+				for n, test := range [...]struct {
+					Start, Length int64
+					Expectation   string
+				}{
+					{
+						0, 10,
+						contentsE[:10],
+					},
+					{
+						0, 100,
+						contentsE[:100],
+					},
+					{
+						0, 1000,
+						contentsE[:1000],
+					},
+					{
+						100, 10,
+						contentsE[100:110],
+					},
+					{
+						100, 100,
+						contentsE[100:200],
+					},
+					{
+						100, 1000,
+						contentsE[100:1100],
+					},
+				} {
+					m, err := r.ReadAt(buf[:test.Length], test.Start)
+					if err != nil {
+						return fmt.Errorf("test %d: %w", n+1, err)
+					}
+
+					if out := string(buf[:m]); out != test.Expectation {
+						return fmt.Errorf("test %d: expecting to read %q (%d), got %q (%d)", n+1, test.Expectation, len(test.Expectation), out, m)
+					}
+				}
+
+				return nil
+			},
+		},
+		dir("dirA", []child{
+			fileData("fileE", contentsE),
+		}),
+	)
+}
+
 func TestStat(t *testing.T) {
 	test(
 		t,
