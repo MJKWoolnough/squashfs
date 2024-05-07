@@ -26,6 +26,10 @@ func (f *file) Read(p []byte) (int, error) {
 		return 0, fs.ErrClosed
 	}
 
+	return f.read(p)
+}
+
+func (f *file) read(p []byte) (int, error) {
 	if f.reader == nil {
 		reader, err := f.getOffsetReader(f.pos)
 		if err != nil {
@@ -41,8 +45,17 @@ func (f *file) Read(p []byte) (int, error) {
 
 	if errors.Is(err, io.EOF) {
 		if uint64(f.pos) < f.file.fileSize {
-			err = nil
 			f.reader = nil
+
+			if n < len(p) {
+				var m int
+
+				m, err = f.read(p[n:])
+
+				n += m
+			} else {
+				err = nil
+			}
 		}
 	}
 
