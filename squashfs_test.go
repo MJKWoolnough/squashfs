@@ -98,7 +98,7 @@ func TestOpenRead(t *testing.T) {
 }
 
 func TestOpenReadAt(t *testing.T) {
-	var buf [1024]byte
+	var buf [1 << 15]byte
 
 	test(
 		t,
@@ -141,6 +141,18 @@ func TestOpenReadAt(t *testing.T) {
 					{
 						100, 1000,
 						contentsE[100:1100],
+					},
+					{
+						0, 1 << 15,
+						contentsE[:1<<15],
+					},
+					{
+						1, 1 << 15,
+						contentsE[1 : 1+1<<15],
+					},
+					{
+						int64(len(contentsE)) - 1000, 1000,
+						contentsE[len(contentsE)-1000:],
 					},
 				} {
 					m, err := r.ReadAt(buf[:test.Length], test.Start)
