@@ -67,7 +67,7 @@ func readSqfsFile(sfs fs.FS, path, expectation string) error {
 	return nil
 }
 
-func TestOpen(t *testing.T) {
+func TestOpenRead(t *testing.T) {
 	test(
 		t,
 		[]testFn{
