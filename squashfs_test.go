@@ -174,6 +174,110 @@ func TestOpenReadAt(t *testing.T) {
 	)
 }
 
+func TestSeek(t *testing.T) {
+	var buf [1 << 15]byte
+
+	test(
+		t,
+		[]testFn{
+			func(sfs FS) error {
+				a, err := sfs.Open("/dirA/fileE")
+				if err != nil {
+					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
+				}
+
+				r, ok := a.(io.ReadSeeker)
+				if !ok {
+					return fmt.Errorf("didn't get io.ReaderAt")
+				}
+
+				for n, test := range [...]struct {
+					Start, Length int64
+					Expectation   string
+				}{
+					{
+						0, 10,
+						contentsE[:10],
+					},
+					{
+						0, 100,
+						contentsE[:100],
+					},
+					{
+						0, 1000,
+						contentsE[:1000],
+					},
+					{
+						100, 10,
+						contentsE[100:110],
+					},
+					{
+						100, 100,
+						contentsE[100:200],
+					},
+					{
+						100, 1000,
+						contentsE[100:1100],
+					},
+					{
+						0, 1 << 15,
+						contentsE[:1<<15],
+					},
+					{
+						1, 1 << 15,
+						contentsE[1 : 1+1<<15],
+					},
+					{
+						int64(len(contentsE)) - 1000, 1000,
+						contentsE[len(contentsE)-1000:],
+					},
+				} {
+					for s, seek := range [...]struct {
+						Offset int64
+						Whence int
+					}{
+						{
+							test.Start,
+							io.SeekStart,
+						},
+						{
+							-test.Length,
+							io.SeekCurrent,
+						},
+						{
+							test.Start - int64(len(contentsE)),
+							io.SeekEnd,
+						},
+					} {
+						p, err := r.Seek(seek.Offset, seek.Whence)
+						if err != nil {
+							return fmt.Errorf("test %d.%d: %w", n+1, s+1, err)
+						}
+
+						if p != test.Start {
+							return fmt.Errorf("test %d.%d: expecting to be at byte %d, actually at %d", n+1, s+1, test.Start, p)
+						}
+
+						m, err := r.Read(buf[:test.Length])
+						if err != nil {
+							return fmt.Errorf("test %d.%d: %w", n+1, s+1, err)
+						}
+
+						if out := string(buf[:m]); out != test.Expectation {
+							return fmt.Errorf("test %d.%d: expecting to read %q (%d), got %q (%d)", s+1, n+1, test.Expectation, len(test.Expectation), out, m)
+						}
+					}
+				}
+
+				return nil
+			},
+		},
+		dir("dirA", []child{
+			fileData("fileE", contentsE),
+		}),
+	)
+}
+
 func TestStat(t *testing.T) {
 	test(
 		t,
