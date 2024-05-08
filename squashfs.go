@@ -92,10 +92,7 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 			file:     f,
 		}, nil
 	case dirStat:
-		return &dir{
-			squashfs: s,
-			dir:      f,
-		}, nil
+		return s.newDir(f)
 	}
 
 	return nil, fs.ErrInvalid

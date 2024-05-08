@@ -1,6 +1,7 @@
 package squashfs
 
 import (
+	"io"
 	"io/fs"
 	"sync"
 )
@@ -10,6 +11,20 @@ type dir struct {
 
 	mu       sync.Mutex
 	squashfs *squashfs
+	reader   io.Reader
+}
+
+func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
+	r, err := s.readMetadata(uint64(dirStat.blockIndex)<<16|uint64(dirStat.blockOffset), s.superblock.DirTable)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dir{
+		dir:      dirStat,
+		squashfs: s,
+		reader:   io.LimitReader(r, int64(dirStat.fileSize)),
+	}, nil
 }
 
 func (*dir) Read(_ []byte) (int, error) {
