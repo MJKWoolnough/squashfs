@@ -40,6 +40,10 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	if d.squashfs == nil {
+		return nil, fs.ErrClosed
+	}
+
 	ler := byteio.StickyLittleEndianReader{Reader: d.reader}
 
 	if n <= 0 {
