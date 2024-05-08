@@ -85,10 +85,16 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 		return nil, err
 	}
 
-	if f, ok := f.(fileStat); ok {
+	switch f := f.(type) {
+	case fileStat:
 		return &file{
 			squashfs: s,
 			file:     f,
+		}, nil
+	case dirStat:
+		return &dir{
+			squashfs: s,
+			dir:      f,
 		}, nil
 	}
 
