@@ -56,13 +56,21 @@ const (
 	inodeExtSock      = 14
 )
 
+type dirIndex struct {
+	index uint32
+	start uint32
+	name  string
+}
+
 type dirStat struct {
 	commonStat
 	blockIndex  uint32
 	linkCount   uint32
-	fileSize    uint16
+	fileSize    uint32
 	blockOffset uint16
 	parentInode uint32
+	xattrIndex  uint32
+	index       []dirIndex
 }
 
 func readBasicDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirStat {
@@ -70,47 +78,14 @@ func readBasicDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirSt
 		commonStat:  common,
 		blockIndex:  ler.ReadUint32(),
 		linkCount:   ler.ReadUint32(),
-		fileSize:    ler.ReadUint16(),
+		fileSize:    uint32(ler.ReadUint16()),
 		blockOffset: ler.ReadUint16(),
 		parentInode: ler.ReadUint32(),
 	}
 }
 
-func (d dirStat) Mode() fs.FileMode {
-	return fs.ModeDir | fs.FileMode(d.perms)
-}
-
-func (d dirStat) IsDir() bool {
-	return true
-}
-
-func (d dirStat) Size() int64 {
-	return 0
-}
-
-func (d dirStat) Sys() any {
-	return d
-}
-
-type dirIndex struct {
-	index uint32
-	start uint32
-	name  string
-}
-
-type dirExtStat struct {
-	commonStat
-	linkCount   uint32
-	fileSize    uint32
-	blockIndex  uint32
-	parentInode uint32
-	blockOffset uint16
-	xattrIndex  uint32
-	index       []dirIndex
-}
-
-func readExtDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirExtStat {
-	d := dirExtStat{
+func readExtDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirStat {
+	d := dirStat{
 		commonStat:  common,
 		linkCount:   ler.ReadUint32(),
 		fileSize:    ler.ReadUint32(),
@@ -132,19 +107,19 @@ func readExtDir(ler *byteio.StickyLittleEndianReader, common commonStat) dirExtS
 	return d
 }
 
-func (d dirExtStat) Mode() fs.FileMode {
+func (d dirStat) Mode() fs.FileMode {
 	return fs.ModeDir | fs.FileMode(d.perms)
 }
 
-func (d dirExtStat) IsDir() bool {
+func (d dirStat) IsDir() bool {
 	return true
 }
 
-func (d dirExtStat) Size() int64 {
+func (d dirStat) Size() int64 {
 	return 0
 }
 
-func (d dirExtStat) Sys() any {
+func (d dirStat) Sys() any {
 	return d
 }
 
@@ -404,7 +379,7 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	return fi, nil
 }
 
-func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset, totalSize uint16) (fs.FileInfo, error) {
+func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint16, totalSize uint32) (fs.FileInfo, error) {
 	r, err := s.readMetadata(uint64(blockIndex)<<16|uint64(blockOffset), s.superblock.DirTable)
 	if err != nil {
 		return nil, err
