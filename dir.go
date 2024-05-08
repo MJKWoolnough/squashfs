@@ -4,6 +4,8 @@ import (
 	"io"
 	"io/fs"
 	"sync"
+
+	"vimagination.zapto.org/byteio"
 )
 
 type dir struct {
@@ -12,6 +14,8 @@ type dir struct {
 	mu       sync.Mutex
 	squashfs *squashfs
 	reader   io.Reader
+	count    uint32
+	start    uint32
 }
 
 func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
@@ -31,6 +35,45 @@ func (*dir) Read(_ []byte) (int, error) {
 	return 0, fs.ErrInvalid
 }
 
+func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	ler := byteio.StickyLittleEndianReader{Reader: d.reader}
+
+	if n == -1 {
+		n = int(d.dir.linkCount)
+	}
+
+	entries := make([]fs.DirEntry, n)
+
+	for n := range entries {
+		if d.count == 0 {
+			d.count = ler.ReadUint32()
+			d.start = ler.ReadUint32()
+			ler.ReadUint32()
+		}
+
+		offset := uint64(ler.ReadUint16())
+		ler.ReadInt16() // inode offset
+
+		entries[n] = dirEntry{
+			squashfs: d.squashfs,
+			typ:      fs.FileMode(ler.ReadUint16()),
+			name:     ler.ReadString(int(ler.ReadUint16()) + 1),
+			ptr:      uint64(d.start<<16) | offset,
+		}
+
+		d.count--
+	}
+
+	if ler.Err != nil {
+		return nil, ler.Err
+	}
+
+	return entries, nil
+}
+
 func (d *dir) Stat() (fs.FileInfo, error) {
 	return d.dir, nil
 }
@@ -46,4 +89,27 @@ func (d *dir) Close() error {
 	d.squashfs = nil
 
 	return nil
+}
+
+type dirEntry struct {
+	squashfs *squashfs
+	typ      fs.FileMode
+	name     string
+	ptr      uint64
+}
+
+func (d dirEntry) Name() string {
+	return d.name
+}
+
+func (d dirEntry) IsDir() bool {
+	return d.typ.IsDir()
+}
+
+func (d dirEntry) Type() fs.FileMode {
+	return d.typ
+}
+
+func (d dirEntry) Info() (fs.FileInfo, error) {
+	return d.squashfs.getEntry(d.ptr)
 }
