@@ -39,6 +39,10 @@ func (c commonStat) IsDir() bool {
 	return false
 }
 
+func (c commonStat) Type() fs.FileMode {
+	return c.Mode().Type()
+}
+
 const (
 	inodeBasicDir     = 1
 	inodeBasicFile    = 2
@@ -123,6 +127,14 @@ func (d dirStat) Sys() any {
 	return d
 }
 
+func (d dirStat) Type() fs.FileMode {
+	return d.Mode().Type()
+}
+
+func (d dirStat) Info() (fs.FileInfo, error) {
+	return d, nil
+}
+
 type fileStat struct {
 	commonStat
 	blocksStart uint64
@@ -193,6 +205,10 @@ func (f fileStat) Size() int64 {
 
 func (f fileStat) Sys() any {
 	return f
+}
+
+func (f fileStat) Info() (fs.FileInfo, error) {
+	return f, nil
 }
 
 type symlinkStat struct {
