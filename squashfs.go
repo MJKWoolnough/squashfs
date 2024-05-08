@@ -95,8 +95,29 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 	return nil, fs.ErrInvalid
 }
 
+func (s *squashfs) ReadFile(name string) ([]byte, error) {
+	f, err := s.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	ff, ok := f.(*file)
+	if !ok {
+		return nil, fs.ErrInvalid
+	}
+
+	buf := make([]byte, ff.file.fileSize)
+
+	if _, err = ff.read(buf); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
 type FS interface {
 	fs.StatFS
+	fs.ReadFileFS
 }
 
 // Open reads the passed io.ReaderAt as a SquashFS image, returning a fs.FS
