@@ -8,7 +8,7 @@ import (
 func TestGetStats(t *testing.T) {
 	sqfs, err := buildSquashFS(
 		t,
-		dir("dirA", []child{
+		dirData("dirA", []child{
 			fileData("fileA", "my contents"),
 		}),
 	)

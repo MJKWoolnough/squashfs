@@ -87,7 +87,7 @@ func TestOpenRead(t *testing.T) {
 				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileE"), contentsE)
 			},
 		},
-		dir("dirA", []child{
+		dirData("dirA", []child{
 			fileData("fileA", contentsA),
 			fileData("fileB", contentsB),
 			fileData("fileC", contentsC),
@@ -170,7 +170,7 @@ func TestOpenReadAt(t *testing.T) {
 				return nil
 			},
 		},
-		dir("dirA", []child{
+		dirData("dirA", []child{
 			fileData("fileE", contentsE),
 		}),
 	)
@@ -234,7 +234,7 @@ func TestSeek(t *testing.T) {
 				return nil
 			},
 		},
-		dir("dirA", []child{
+		dirData("dirA", []child{
 			fileData("fileE", contentsE),
 		}),
 	)
@@ -337,15 +337,15 @@ func TestStat(t *testing.T) {
 				return nil
 			},
 		},
-		dir("dirA", []child{}, chmod(0o555)),
-		dir("dirB", []child{
+		dirData("dirA", []child{}, chmod(0o555)),
+		dirData("dirB", []child{
 			fileData("fileA", contentsA, chmod(0o600), modtime(timestamp)),
 		}),
-		dir("dirC", []child{
+		dirData("dirC", []child{
 			fileData("fileB", contentsA, chmod(0o123)),
 			symlink("fileC", "fileB", chmod(0o321)),
 		}),
-		dir("dirD", []child{
+		dirData("dirD", []child{
 			symlink("fileD", "../dirC/fileB", chmod(0o231)),
 			symlink("fileE", "/dirC/fileB", chmod(0o132)),
 		}),

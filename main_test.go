@@ -144,7 +144,7 @@ func buildSquashFS(t *testing.T, children ...child) (string, error) {
 	return sqfs, nil
 }
 
-func dir(name string, children []child, opts ...option) *directory {
+func dirData(name string, children []child, opts ...option) *directory {
 	dir := &directory{
 		Header: tar.Header{
 			Name:     name,
