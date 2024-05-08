@@ -57,7 +57,7 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 
 		offset := uint64(ler.ReadUint16())
 		ler.ReadInt16() // inode offset
-		typ := fs.FileMode(ler.ReadUint16())
+		typ := ler.ReadUint16()
 		name := ler.ReadString(int(ler.ReadUint16()) + 1)
 
 		if ler.Err != nil {
@@ -102,7 +102,7 @@ func (d *dir) Close() error {
 
 type dirEntry struct {
 	squashfs *squashfs
-	typ      fs.FileMode
+	typ      uint16
 	name     string
 	ptr      uint64
 }
@@ -112,11 +112,28 @@ func (d dirEntry) Name() string {
 }
 
 func (d dirEntry) IsDir() bool {
-	return d.typ.IsDir()
+	return d.typ == inodeBasicDir
 }
 
 func (d dirEntry) Type() fs.FileMode {
-	return d.typ
+	switch d.typ {
+	case inodeBasicDir:
+		return fs.ModeDir
+	case inodeBasicFile:
+		return 0
+	case inodeBasicSymlink:
+		return fs.ModeSymlink
+	case inodeBasicBlock:
+		return fs.ModeDevice
+	case inodeBasicChar:
+		return fs.ModeCharDevice
+	case inodeBasicPipe:
+		return fs.ModeNamedPipe
+	case inodeBasicSock:
+		return fs.ModeSocket
+	}
+
+	return fs.ModeIrregular
 }
 
 func (d dirEntry) Info() (fs.FileInfo, error) {
