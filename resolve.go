@@ -456,13 +456,13 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 			cutAt += slashPos + 1
 		}
 
-		if name == "" || name == "." {
-			continue
-		}
-
 		dir, ok := curr.(dirStat)
 		if !ok {
 			return nil, fs.ErrInvalid
+		}
+
+		if name == "" || name == "." {
+			continue
 		}
 
 		if curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize); err != nil {
