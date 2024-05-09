@@ -455,7 +455,7 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 			cutAt += slashPos + 1
 		}
 
-		if name == "" {
+		if name == "" || name == "." {
 			continue
 		}
 
