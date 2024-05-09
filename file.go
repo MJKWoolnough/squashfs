@@ -220,6 +220,10 @@ func (f *file) ReadAt(p []byte, offset int64) (int, error) {
 		return 0, fs.ErrClosed
 	}
 
+	if uint64(offset) == f.file.fileSize {
+		return 0, io.EOF
+	}
+
 	g := file{
 		file:     f.file,
 		squashfs: sqfs,
