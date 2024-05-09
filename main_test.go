@@ -101,6 +101,11 @@ type child interface {
 	writeTo(*tar.Writer, string) error
 }
 
+const (
+	requiredFile     = ".required"
+	requiredContents = "some contents"
+)
+
 func buildSquashFS(t *testing.T, children ...child) (string, error) {
 	t.Helper()
 
@@ -112,9 +117,15 @@ func buildSquashFS(t *testing.T, children ...child) (string, error) {
 	go func() {
 		w := tar.NewWriter(pw)
 
-		for _, child := range children {
-			if err := child.writeTo(w, "/"); err != nil {
-				ch <- err
+		if err := fileData(requiredFile, requiredContents).writeTo(w, "/"); err != nil {
+			ch <- err
+		} else {
+			for _, child := range children {
+				if err := child.writeTo(w, "/"); err != nil {
+					ch <- err
+
+					break
+				}
 			}
 		}
 

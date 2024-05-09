@@ -27,8 +27,8 @@ func TestGetStats(t *testing.T) {
 		t.Fatalf("unexpected error reading squashfs file: %s", err)
 	}
 
-	if stats.Inodes != 3 {
-		t.Errorf("expecting 3 inodes, got %d", stats.Inodes)
+	if stats.Inodes != 4 {
+		t.Errorf("expecting 4 inodes, got %d", stats.Inodes)
 	}
 
 	const blockSize = 128 << 10
