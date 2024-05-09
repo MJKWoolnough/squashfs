@@ -46,13 +46,15 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 
 	ler := byteio.StickyLittleEndianReader{Reader: d.reader}
 
+	m := n
+
 	if n <= 0 {
-		n = int(d.dir.linkCount)
+		m = int(d.dir.linkCount)
 	}
 
-	entries := make([]fs.DirEntry, n)
+	entries := make([]fs.DirEntry, m)
 
-	for n := range entries {
+	for m := range entries {
 		if d.count == 0 {
 			d.count = ler.ReadUint32()
 			d.start = ler.ReadUint32()
@@ -65,16 +67,14 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 		name := ler.ReadString(int(ler.ReadUint16()) + 1)
 
 		if ler.Err != nil {
-			if n == 0 || !errors.Is(ler.Err, io.EOF) {
+			if n > 0 || !errors.Is(ler.Err, io.EOF) {
 				return nil, ler.Err
 			}
 
-			entries = entries[:n]
-
-			break
+			return entries[:m], nil
 		}
 
-		entries[n] = dirEntry{
+		entries[m] = dirEntry{
 			squashfs: d.squashfs,
 			typ:      typ,
 			name:     name,
