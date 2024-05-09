@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 )
 
@@ -42,6 +43,10 @@ func test(t *testing.T, tests []testFn, children ...child) {
 		t.Fatalf("unexpected error opening squashfs reader: %s", err)
 	}
 
+	if err := fstest.TestFS(sfs, ".required"); err != nil {
+		t.Fatal(err)
+	}
+
 	for n, test := range tests {
 		if err := test(sfs); err != nil {
 			t.Errorf("test %d: %s", n+1, err)
@@ -72,19 +77,19 @@ func TestOpenRead(t *testing.T) {
 		t,
 		[]testFn{
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileA"), contentsA)
+				return readSqfsFile(sfs, filepath.Join("dirA", "fileA"), contentsA)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileB"), contentsB)
+				return readSqfsFile(sfs, filepath.Join("dirA", "fileB"), contentsB)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileC"), contentsC)
+				return readSqfsFile(sfs, filepath.Join("dirA", "fileC"), contentsC)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileD"), contentsD)
+				return readSqfsFile(sfs, filepath.Join("dirA", "fileD"), contentsD)
 			},
 			func(sfs FS) error {
-				return readSqfsFile(sfs, filepath.Join("/", "dirA", "fileE"), contentsE)
+				return readSqfsFile(sfs, filepath.Join("dirA", "fileE"), contentsE)
 			},
 		},
 		dirData("dirA", []child{
@@ -146,7 +151,7 @@ func TestOpenReadAt(t *testing.T) {
 		t,
 		[]testFn{
 			func(sfs FS) error {
-				a, err := sfs.Open("/dirA/fileE")
+				a, err := sfs.Open("dirA/fileE")
 				if err != nil {
 					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
 				}
@@ -183,7 +188,7 @@ func TestSeek(t *testing.T) {
 		t,
 		[]testFn{
 			func(sfs FS) error {
-				a, err := sfs.Open("/dirA/fileE")
+				a, err := sfs.Open("dirA/fileE")
 				if err != nil {
 					return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
 				}
@@ -261,7 +266,7 @@ func TestStat(t *testing.T) {
 				return nil
 			},
 			func(sfs FS) error {
-				stats, err := sfs.Stat("/dirA")
+				stats, err := sfs.Stat("dirA")
 				if err != nil {
 					return fmt.Errorf("unexpected error stat'ing dir: %w", err)
 				}
@@ -277,7 +282,7 @@ func TestStat(t *testing.T) {
 				return nil
 			},
 			func(sfs FS) error {
-				stats, err := sfs.Stat("/dirB/fileA")
+				stats, err := sfs.Stat("dirB/fileA")
 				if err != nil {
 					return fmt.Errorf("unexpected error stat'ing file: %w", err)
 				}
@@ -301,7 +306,7 @@ func TestStat(t *testing.T) {
 				return nil
 			},
 			func(sfs FS) error {
-				stats, err := sfs.Stat("/dirC/fileC")
+				stats, err := sfs.Stat("dirC/fileC")
 				if err != nil {
 					return fmt.Errorf("unexpected error stat'ing file: %w", err)
 				}
@@ -313,7 +318,7 @@ func TestStat(t *testing.T) {
 				return nil
 			},
 			func(sfs FS) error {
-				stats, err := sfs.Stat("/dirD/fileD")
+				stats, err := sfs.Stat("dirD/fileD")
 				if err != nil {
 					return fmt.Errorf("unexpected error stat'ing file: %w", err)
 				}
@@ -325,7 +330,7 @@ func TestStat(t *testing.T) {
 				return nil
 			},
 			func(sfs FS) error {
-				stats, err := sfs.Stat("/dirD/fileE")
+				stats, err := sfs.Stat("dirD/fileE")
 				if err != nil {
 					return fmt.Errorf("unexpected error stat'ing file: %w", err)
 				}

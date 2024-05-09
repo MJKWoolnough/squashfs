@@ -432,6 +432,10 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 }
 
 func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
+	if !fs.ValidPath(fpath) {
+		return nil, fs.ErrInvalid
+	}
+
 	root, err := s.getEntry(s.superblock.RootInode, "")
 	if err != nil {
 		return nil, err
