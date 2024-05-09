@@ -401,7 +401,7 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 		return nil, err
 	}
 
-	ler := byteio.StickyLittleEndianReader{Reader: io.LimitReader(r, int64(totalSize))}
+	ler := byteio.StickyLittleEndianReader{Reader: io.LimitReader(r, int64(totalSize-3))}
 
 	for {
 		count := ler.ReadUint32()
