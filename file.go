@@ -191,7 +191,7 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		return f.pos, fs.ErrInvalid
 	}
 
-	if base > f.pos {
+	if base > f.pos && f.reader != nil {
 		cBlock, _ := f.getBlockOffset(f.pos)
 		bBlock, _ := f.getBlockOffset(base)
 
