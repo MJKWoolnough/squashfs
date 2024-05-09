@@ -118,6 +118,20 @@ func (s *squashfs) ReadFile(name string) ([]byte, error) {
 	return buf, nil
 }
 
+func (s *squashfs) ReadDir(name string) ([]fs.DirEntry, error) {
+	d, err := s.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	dd, ok := d.(*dir)
+	if !ok {
+		return nil, fs.ErrInvalid
+	}
+
+	return dd.ReadDir(-1)
+}
+
 type FS interface {
 	fs.StatFS
 	fs.ReadFileFS
