@@ -141,5 +141,5 @@ func (d dirEntry) Type() fs.FileMode {
 }
 
 func (d dirEntry) Info() (fs.FileInfo, error) {
-	return d.squashfs.getEntry(d.ptr)
+	return d.squashfs.getEntry(d.ptr, d.name)
 }

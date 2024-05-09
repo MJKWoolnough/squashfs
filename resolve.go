@@ -364,7 +364,7 @@ func (s *squashfs) readEntry(ler *byteio.StickyLittleEndianReader, typ uint16, c
 	}
 }
 
-func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
+func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
 		return nil, err
@@ -380,6 +380,7 @@ func (s *squashfs) getEntry(inode uint64) (fs.FileInfo, error) {
 	ler.ReadUint32() // inode number?
 
 	common := commonStat{
+		name:  name,
 		perms: perms,
 		uid:   uint32(uid), // TODO: Lookup actual ID
 		gid:   uint32(gid), // TODO: Lookup actual ID
@@ -422,7 +423,7 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 			dname := ler.ReadString(nameSize + 1)
 
 			if dname == name {
-				return s.getEntry(start<<16 | offset)
+				return s.getEntry(start<<16|offset, dname)
 			} else if name < dname {
 				return nil, fs.ErrNotExist
 			}
@@ -431,7 +432,7 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 }
 
 func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
-	root, err := s.getEntry(s.superblock.RootInode)
+	root, err := s.getEntry(s.superblock.RootInode, "")
 	if err != nil {
 		return nil, err
 	}
