@@ -20,8 +20,13 @@ type dir struct {
 	read     int
 }
 
+const (
+	dirFileSizeOffset  = 3
+	dirLinkCountOffset = 2
+)
+
 func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
-	r, err := s.readMetadata(uint64(dirStat.blockIndex)<<16|uint64(dirStat.blockOffset), s.superblock.DirTable)
+	r, err := s.readMetadata(uint64(dirStat.blockIndex)<<metadataPointerShift|uint64(dirStat.blockOffset), s.superblock.DirTable)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +34,7 @@ func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
 	return &dir{
 		dir:      dirStat,
 		squashfs: s,
-		reader:   io.LimitReader(r, int64(dirStat.fileSize-3)),
+		reader:   io.LimitReader(r, int64(dirStat.fileSize-dirFileSizeOffset)),
 	}, nil
 }
 
@@ -49,7 +54,7 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 
 	m := n
 
-	max := int(d.dir.linkCount) - d.read - 2
+	max := int(d.dir.linkCount) - d.read - dirLinkCountOffset
 
 	if n <= 0 || n >= max {
 		m = max
@@ -85,7 +90,7 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 			squashfs: d.squashfs,
 			typ:      typ,
 			name:     name,
-			ptr:      uint64(d.start<<16) | offset,
+			ptr:      uint64(d.start<<metadataPointerShift) | offset,
 		}
 
 		d.count--

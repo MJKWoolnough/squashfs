@@ -397,12 +397,12 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 }
 
 func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint16, totalSize uint32) (fs.FileInfo, error) {
-	r, err := s.readMetadata(uint64(blockIndex)<<16|uint64(blockOffset), s.superblock.DirTable)
+	r, err := s.readMetadata(uint64(blockIndex)<<metadataPointerShift|uint64(blockOffset), s.superblock.DirTable)
 	if err != nil {
 		return nil, err
 	}
 
-	ler := byteio.StickyLittleEndianReader{Reader: io.LimitReader(r, int64(totalSize-3))}
+	ler := byteio.StickyLittleEndianReader{Reader: io.LimitReader(r, int64(totalSize-dirFileSizeOffset))}
 
 	for {
 		count := ler.ReadUint32()
