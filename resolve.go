@@ -485,9 +485,11 @@ func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) 
 			}
 
 			if strings.HasPrefix(sym.targetPath, "/") {
-				fullPath = path.Clean(sym.targetPath)
-			} else {
+				fullPath = path.Clean(sym.targetPath)[1:]
+			} else if fpath == "" {
 				fullPath = path.Join(fullPath[:cutAt], sym.targetPath, fpath)
+			} else {
+				fullPath = path.Join(fullPath[:cutAt-len(name)-1], sym.targetPath, fpath)
 			}
 
 			fpath = fullPath
