@@ -431,7 +431,7 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 	}
 }
 
-func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
+func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) {
 	if !fs.ValidPath(fpath) {
 		return nil, fs.ErrInvalid
 	}
@@ -471,6 +471,10 @@ func (s *squashfs) resolve(fpath string) (fs.FileInfo, error) {
 
 		if curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize); err != nil {
 			return nil, err
+		}
+
+		if fpath == "" && !resolveLast {
+			break
 		}
 
 		if sym, ok := curr.(symlinkStat); ok {

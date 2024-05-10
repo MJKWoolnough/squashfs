@@ -80,7 +80,7 @@ type squashfs struct {
 }
 
 func (s *squashfs) Open(path string) (fs.File, error) {
-	f, err := s.resolve(path)
+	f, err := s.resolve(path, true)
 	if err != nil {
 		return nil, err
 	}
@@ -155,5 +155,9 @@ func Open(r io.ReaderAt) (FS, error) {
 }
 
 func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
-	return s.resolve(path)
+	return s.resolve(path, true)
+}
+
+func (s *squashfs) LStat(path string) (fs.FileInfo, error) {
+	return s.resolve(path, false)
 }
