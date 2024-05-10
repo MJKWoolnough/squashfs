@@ -367,6 +367,18 @@ func TestStat(t *testing.T) {
 
 				return nil
 			},
+			func(sfs FS) error {
+				stats, err := sfs.LStat("dirE/fileB")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
+
+				if m := stats.Mode(); m != 0o123 {
+					return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o123), m)
+				}
+
+				return nil
+			},
 		},
 		dirData("dirA", []child{}, chmod(0o555)),
 		dirData("dirB", []child{
