@@ -250,7 +250,7 @@ func TestStat(t *testing.T) {
 		t,
 		[]testFn{
 			func(sfs FS) error {
-				stats, err := sfs.Stat("/")
+				stats, err := sfs.Stat(".")
 				if err != nil {
 					return fmt.Errorf("unexpected error stat'ing root: %w", err)
 				}
