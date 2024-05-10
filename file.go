@@ -43,11 +43,9 @@ func (f *file) read(p []byte) (int, error) {
 
 	f.pos += int64(n)
 
-	if errors.Is(err, io.EOF) {
-		if uint64(f.pos) < f.file.fileSize {
-			f.reader = nil
-			err = nil
-		}
+	if errors.Is(err, io.EOF) && uint64(f.pos) < f.file.fileSize {
+		f.reader = nil
+		err = nil
 	}
 
 	if err == nil {
