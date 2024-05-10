@@ -135,6 +135,7 @@ func (s *squashfs) ReadDir(name string) ([]fs.DirEntry, error) {
 type FS interface {
 	fs.StatFS
 	fs.ReadFileFS
+	LStat(name string) (fs.FileInfo, error)
 }
 
 // Open reads the passed io.ReaderAt as a SquashFS image, returning a fs.FS
