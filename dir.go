@@ -17,6 +17,7 @@ type dir struct {
 	reader   io.Reader
 	count    uint32
 	start    uint32
+	read     int
 }
 
 func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
@@ -48,8 +49,14 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 
 	m := n
 
-	if n <= 0 {
-		m = int(d.dir.linkCount)
+	max := int(d.dir.linkCount) - d.read - 2
+
+	if n <= 0 || n >= max {
+		m = max
+	}
+
+	if n >= 0 && m == 0 {
+		return nil, io.EOF
 	}
 
 	entries := make([]fs.DirEntry, m)
@@ -82,6 +89,7 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 		}
 
 		d.count--
+		d.read++
 	}
 
 	return entries, nil
