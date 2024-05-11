@@ -86,18 +86,19 @@ func (d *dir) readDir(n int) ([]fs.DirEntry, error) {
 
 func (d *dir) readDirEntry(ler *byteio.StickyLittleEndianReader) dirEntry {
 	if d.count == 0 {
-		d.count = ler.ReadUint32()
+		d.count = ler.ReadUint32() + 1
 		d.start = ler.ReadUint32()
 		ler.ReadUint32()
+	} else {
+		d.count--
 	}
+
+	d.read++
 
 	offset := uint64(ler.ReadUint16())
 	ler.ReadInt16() // inode offset
 	typ := ler.ReadUint16()
 	name := ler.ReadString(int(ler.ReadUint16()) + 1)
-
-	d.count--
-	d.read++
 
 	return dirEntry{
 		squashfs: d.squashfs,
