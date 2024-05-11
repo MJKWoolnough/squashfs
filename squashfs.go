@@ -43,6 +43,16 @@ func (s *superblock) readFrom(r io.Reader) error {
 		return ErrInvalidMagicNumber
 	}
 
+	if err = s.readSuperBlockDetails(&ler); err != nil {
+		return err
+	}
+
+	s.CompressionOptions, err = s.Compressor.parseOptions(s.Flags&0x400 != 0, &ler)
+
+	return err
+}
+
+func (s *superblock) readSuperBlockDetails(ler *byteio.StickyLittleEndianReader) error {
 	s.Inodes = ler.ReadUint32()
 	s.ModTime = time.Unix(int64(ler.ReadUint32()), 0)
 	s.BlockSize = ler.ReadUint32()
@@ -69,9 +79,7 @@ func (s *superblock) readFrom(r io.Reader) error {
 	s.FragTable = ler.ReadUint64()
 	s.ExportTable = ler.ReadUint64()
 
-	s.CompressionOptions, err = s.Compressor.parseOptions(s.Flags&0x400 != 0, &ler)
-
-	return err
+	return nil
 }
 
 type squashfs struct {
