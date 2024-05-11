@@ -440,11 +440,13 @@ func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) 
 		return nil, err
 	}
 
+	const maximumRedirects = 1024
+
 	r := resolver{
 		squashfs:           s,
 		fullPath:           fpath,
 		path:               fpath,
-		redirectsRemaining: 1024,
+		redirectsRemaining: maximumRedirects,
 	}
 
 	return r.resolve(root, resolveLast)
