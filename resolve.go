@@ -374,16 +374,24 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 
 	typ := ler.ReadUint16()
 	perms := ler.ReadUint16()
-	uid := ler.ReadUint16()
-	gid := ler.ReadUint16()
+	uid, err := s.getID(ler.ReadUint16())
+	if err != nil {
+		return nil, err
+	}
+
+	gid, err := s.getID(ler.ReadUint16())
+	if err != nil {
+		return nil, err
+	}
+
 	mtime := ler.ReadUint32()
 	ler.ReadUint32() // inode number?
 
 	common := commonStat{
 		name:  name,
 		perms: perms,
-		uid:   uint32(uid), // TODO: Lookup actual ID
-		gid:   uint32(gid), // TODO: Lookup actual ID
+		uid:   uid,
+		gid:   gid,
 		mtime: time.Unix(int64(mtime), 0),
 	}
 
@@ -394,6 +402,23 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	}
 
 	return fi, nil
+}
+
+func (s *squashfs) getID(id uint16) (uint32, error) {
+	if id >= s.superblock.IDCount {
+		return 0, fs.ErrInvalid
+	}
+
+	const (
+		idPosShift = 2
+		idLength   = 4
+	)
+
+	ler := byteio.LittleEndianReader{Reader: io.NewSectionReader(s.reader, int64(id<<idPosShift), idLength)}
+
+	pid, _, err := ler.ReadUint32()
+
+	return pid, err
 }
 
 func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint16, totalSize uint32) (fs.FileInfo, error) {
