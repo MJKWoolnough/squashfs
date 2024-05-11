@@ -50,8 +50,6 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 		return nil, fs.ErrClosed
 	}
 
-	ler := byteio.StickyLittleEndianReader{Reader: d.reader}
-
 	m := n
 
 	max := int(d.dir.linkCount) - d.read - dirLinkCountOffset
@@ -64,19 +62,15 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 		return nil, io.EOF
 	}
 
-	entries := make([]fs.DirEntry, m)
+	return d.readDir(m)
+}
+
+func (d *dir) readDir(n int) ([]fs.DirEntry, error) {
+	entries := make([]fs.DirEntry, n)
+	ler := byteio.StickyLittleEndianReader{Reader: d.reader}
 
 	for m := range entries {
-		if d.count == 0 {
-			d.count = ler.ReadUint32()
-			d.start = ler.ReadUint32()
-			ler.ReadUint32()
-		}
-
-		offset := uint64(ler.ReadUint16())
-		ler.ReadInt16() // inode offset
-		typ := ler.ReadUint16()
-		name := ler.ReadString(int(ler.ReadUint16()) + 1)
+		entries[m] = d.readDirEntry(&ler)
 
 		if ler.Err != nil {
 			if n > 0 || !errors.Is(ler.Err, io.EOF) {
@@ -85,19 +79,32 @@ func (d *dir) ReadDir(n int) ([]fs.DirEntry, error) {
 
 			return entries[:m], nil
 		}
-
-		entries[m] = dirEntry{
-			squashfs: d.squashfs,
-			typ:      typ,
-			name:     name,
-			ptr:      uint64(d.start<<metadataPointerShift) | offset,
-		}
-
-		d.count--
-		d.read++
 	}
 
 	return entries, nil
+}
+
+func (d *dir) readDirEntry(ler *byteio.StickyLittleEndianReader) dirEntry {
+	if d.count == 0 {
+		d.count = ler.ReadUint32()
+		d.start = ler.ReadUint32()
+		ler.ReadUint32()
+	}
+
+	offset := uint64(ler.ReadUint16())
+	ler.ReadInt16() // inode offset
+	typ := ler.ReadUint16()
+	name := ler.ReadString(int(ler.ReadUint16()) + 1)
+
+	d.count--
+	d.read++
+
+	return dirEntry{
+		squashfs: d.squashfs,
+		typ:      typ,
+		name:     name,
+		ptr:      uint64(d.start<<metadataPointerShift) | offset,
+	}
 }
 
 func (d *dir) Stat() (fs.FileInfo, error) {
