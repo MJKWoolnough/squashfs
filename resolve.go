@@ -423,6 +423,13 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 	}
 }
 
+type resolver struct {
+	*squashfs
+	fullPath, path     string
+	cutAt              int
+	redirectsRemaining int
+}
+
 func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) {
 	if !fs.ValidPath(fpath) {
 		return nil, fs.ErrInvalid
@@ -433,62 +440,79 @@ func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) 
 		return nil, err
 	}
 
-	curr := root
+	r := resolver{
+		squashfs:           s,
+		fullPath:           fpath,
+		path:               fpath,
+		redirectsRemaining: 1024,
+	}
 
-	fullPath := fpath
-	cutAt := 0
-	redirectsRemaining := 1024
+	return r.resolve(root, resolveLast)
+}
 
-	for fpath != "" {
-		slashPos := strings.Index(fpath, "/")
+func (r *resolver) resolve(root fs.FileInfo, resolveLast bool) (curr fs.FileInfo, err error) {
+	curr = root
 
-		var name string
-		if slashPos == -1 {
-			name = fpath
-			fpath = ""
-		} else {
-			name = fpath[:slashPos]
-			fpath = fpath[slashPos+1:]
-			cutAt += slashPos + 1
-		}
-
-		dir, ok := curr.(dirStat)
-		if !ok {
+	for r.path != "" {
+		if dir, ok := curr.(dirStat); !ok {
 			return nil, fs.ErrInvalid
-		}
-
-		if name == "" || name == "." {
+		} else if name := r.splitOffNamePart(); isEmptyName(name) {
 			continue
-		}
-
-		if curr, err = s.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize); err != nil {
+		} else if curr, err = r.getDirEntry(name, dir.blockIndex, dir.blockOffset, dir.fileSize); err != nil {
 			return nil, err
-		}
-
-		if fpath == "" && !resolveLast {
+		} else if r.isDone(resolveLast) {
 			break
-		}
-
-		if sym, ok := curr.(symlinkStat); ok {
-			redirectsRemaining--
-
-			if redirectsRemaining == 0 {
-				return nil, fs.ErrInvalid
-			}
-
-			if strings.HasPrefix(sym.targetPath, "/") {
-				fullPath = path.Clean(sym.targetPath)[1:]
-			} else if fpath == "" {
-				fullPath = path.Join(fullPath[:cutAt], sym.targetPath, fpath)
-			} else {
-				fullPath = path.Join(fullPath[:cutAt-len(name)-1], sym.targetPath, fpath)
-			}
-
-			fpath = fullPath
-			cutAt = 0
+		} else if sym, ok := curr.(symlinkStat); !ok {
+			continue
+		} else if err := r.handleSymlink(sym); err != nil {
+			return nil, err
+		} else {
 			curr = root
 		}
 	}
 
 	return curr, nil
+}
+
+func (r *resolver) splitOffNamePart() string {
+	slashPos := strings.Index(r.path, "/")
+
+	var name string
+
+	if slashPos == -1 {
+		name, r.path = r.path, ""
+	} else {
+		name, r.path = r.path[:slashPos], r.path[slashPos+1:]
+		r.cutAt += slashPos + 1
+	}
+
+	return name
+}
+
+func (r *resolver) handleSymlink(sym symlinkStat) error {
+	r.redirectsRemaining--
+	if r.redirectsRemaining == 0 {
+		return fs.ErrInvalid
+	}
+
+	if strings.HasPrefix(sym.targetPath, "/") {
+		r.fullPath = path.Clean(sym.targetPath)[1:]
+	} else if r.path == "" {
+		r.fullPath = path.Join(r.fullPath[:r.cutAt], sym.targetPath, r.path)
+	} else {
+		r.fullPath = path.Join(r.fullPath[:r.cutAt-len(sym.name)-1], sym.targetPath, r.path)
+	}
+
+	r.path = r.fullPath
+	r.cutAt = 0
+
+	return nil
+}
+
+func (r *resolver) isDone(resolveLast bool) bool {
+	return r.path == "" && !resolveLast
+}
+
+func isEmptyName(name string) bool {
+	return name == "" || name == "."
 }
