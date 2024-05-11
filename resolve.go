@@ -404,29 +404,21 @@ func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint1
 
 	ler := byteio.StickyLittleEndianReader{Reader: io.LimitReader(r, int64(totalSize-dirFileSizeOffset))}
 
+	d := dir{
+		squashfs: s,
+	}
+
 	for {
-		count := ler.ReadUint32()
-		start := uint64(ler.ReadUint32())
-		ler.ReadUint32() // inode number
+		de := d.readDirEntry(&ler)
 
 		if errors.Is(ler.Err, io.EOF) {
 			return nil, fs.ErrNotExist
 		} else if ler.Err != nil {
 			return nil, ler.Err
-		}
-
-		for i := uint32(0); i <= count; i++ {
-			offset := uint64(ler.ReadUint16())
-			ler.ReadInt16()  // inode offset
-			ler.ReadUint16() // type
-			nameSize := int(ler.ReadUint16())
-			dname := ler.ReadString(nameSize + 1)
-
-			if dname == name {
-				return s.getEntry(start<<16|offset, dname)
-			} else if name < dname {
-				return nil, fs.ErrNotExist
-			}
+		} else if de.name == name {
+			return de.Info()
+		} else if name < de.name {
+			return nil, fs.ErrNotExist
 		}
 	}
 }
