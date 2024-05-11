@@ -97,13 +97,11 @@ func (d *dir) readDirEntry(ler *byteio.StickyLittleEndianReader) dirEntry {
 
 	offset := uint64(ler.ReadUint16())
 	ler.ReadInt16() // inode offset
-	typ := ler.ReadUint16()
-	name := ler.ReadString(int(ler.ReadUint16()) + 1)
 
 	return dirEntry{
 		squashfs: d.squashfs,
-		typ:      typ,
-		name:     name,
+		typ:      ler.ReadUint16(),
+		name:     ler.ReadString(int(ler.ReadUint16()) + 1),
 		ptr:      uint64(d.start<<metadataPointerShift) | offset,
 	}
 }
