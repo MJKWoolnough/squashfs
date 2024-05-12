@@ -426,6 +426,18 @@ func TestReadDir(t *testing.T) {
 					return fmt.Errorf("expecting entry to be %q, got %q", "childA", name)
 				}
 
+				return nil
+			},
+			func(sfs FS) error {
+				entries, err := sfs.ReadDir("dirC")
+				if err != nil {
+					return err
+				}
+
+				if len(entries) != 3 {
+					return fmt.Errorf("expecting 3 entries, got %d", len(entries))
+				}
+
 				for n, child := range [...]string{"childA", "childB", "childC"} {
 					if name := entries[n].Name(); name != child {
 						return fmt.Errorf("expecting entry %d to be %q, got %q", n+1, child, name)
@@ -439,5 +451,10 @@ func TestReadDir(t *testing.T) {
 		dirData("dirB", []child{
 			fileData("childA", ""),
 		}),
+		dirData("dirC", []child{
+			dirData("childA", []child{}),
+			fileData("childB", ""),
+			symlink("childC", "childB"),
+		}, chmod(0o321)),
 	)
 }
