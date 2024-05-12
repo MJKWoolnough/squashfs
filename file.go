@@ -31,6 +31,10 @@ func (f *file) Read(p []byte) (int, error) {
 
 func (f *file) read(p []byte) (int, error) {
 	if f.reader == nil {
+		if uint64(f.pos) == f.file.fileSize {
+			return 0, io.EOF
+		}
+
 		reader, err := f.getOffsetReader(f.pos)
 		if err != nil {
 			return 0, err
