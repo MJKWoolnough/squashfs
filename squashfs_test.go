@@ -395,3 +395,24 @@ func TestStat(t *testing.T) {
 		symlink("dirE", "dirC"),
 	)
 }
+
+func TestReadDir(t *testing.T) {
+	test(
+		t,
+		[]testFn{
+			func(sfs FS) error {
+				entries, err := sfs.ReadDir("dirA")
+				if err != nil {
+					return err
+				}
+
+				if len(entries) != 0 {
+					return fmt.Errorf("expecting no entries, got %v", entries)
+				}
+
+				return nil
+			},
+		},
+		dirData("dirA", []child{}),
+	)
+}
