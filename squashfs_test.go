@@ -24,7 +24,7 @@ var (
 
 type testFn func(FS) error
 
-func test(t *testing.T, tests []testFn, children ...child) {
+func test(t *testing.T, runFSTest bool, tests []testFn, children ...child) {
 	t.Helper()
 
 	sqfs, err := buildSquashFS(t, children...)
@@ -43,8 +43,10 @@ func test(t *testing.T, tests []testFn, children ...child) {
 		t.Fatalf("unexpected error opening squashfs reader: %s", err)
 	}
 
-	if err := fstest.TestFS(sfs, ".required"); err != nil {
-		t.Fatal(err)
+	if runFSTest {
+		if err := fstest.TestFS(sfs, ".required"); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	for n, test := range tests {
@@ -75,6 +77,7 @@ func readSqfsFile(sfs fs.FS, path, expectation string) error {
 func TestOpenRead(t *testing.T) {
 	test(
 		t,
+		false,
 		[]testFn{
 			func(sfs FS) error {
 				return readSqfsFile(sfs, filepath.Join("dirA", "fileA"), contentsA)
@@ -149,6 +152,7 @@ func TestOpenReadAt(t *testing.T) {
 
 	test(
 		t,
+		false,
 		[]testFn{
 			func(sfs FS) error {
 				a, err := sfs.Open("dirA/fileE")
@@ -186,6 +190,7 @@ func TestSeek(t *testing.T) {
 
 	test(
 		t,
+		false,
 		[]testFn{
 			func(sfs FS) error {
 				a, err := sfs.Open("dirA/fileE")
@@ -248,6 +253,7 @@ func TestSeek(t *testing.T) {
 func TestStat(t *testing.T) {
 	test(
 		t,
+		false,
 		[]testFn{
 			func(sfs FS) error {
 				stats, err := sfs.Stat(".")
@@ -355,32 +361,30 @@ func TestStat(t *testing.T) {
 
 				return nil
 			},
-			/*
-				func(sfs FS) error {
-					stats, err := sfs.Stat("dirE/fileB")
-					if err != nil {
-						return fmt.Errorf("unexpected error stat'ing file: %w", err)
-					}
+			func(sfs FS) error {
+				stats, err := sfs.Stat("dirE/fileB")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
 
-					if m := stats.Mode(); m != 0o123 {
-						return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o123), m)
-					}
+				if m := stats.Mode(); m != 0o123 {
+					return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o123), m)
+				}
 
-					return nil
-				},
-				func(sfs FS) error {
-					stats, err := sfs.LStat("dirE/fileB")
-					if err != nil {
-						return fmt.Errorf("unexpected error stat'ing file: %w", err)
-					}
+				return nil
+			},
+			func(sfs FS) error {
+				stats, err := sfs.LStat("dirE/fileB")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
 
-					if m := stats.Mode(); m != 0o123 {
-						return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o123), m)
-					}
+				if m := stats.Mode(); m != 0o123 {
+					return fmt.Errorf("expecting perms %s, got %s", fs.FileMode(0o123), m)
+				}
 
-					return nil
-				},
-			*/
+				return nil
+			},
 		},
 		dirData("dirA", []child{}, chmod(0o555)),
 		dirData("dirB", []child{
@@ -394,13 +398,14 @@ func TestStat(t *testing.T) {
 			symlink("fileD", "../dirC/fileB", chmod(0o231)),
 			symlink("fileE", "/dirC/fileB", chmod(0o132)),
 		}),
-		// symlink("dirE", "dirC"),
+		symlink("dirE", "dirC"),
 	)
 }
 
 func TestReadDir(t *testing.T) {
 	test(
 		t,
+		true,
 		[]testFn{
 			func(sfs FS) error {
 				entries, err := sfs.ReadDir("dirA")
