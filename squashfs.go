@@ -3,6 +3,7 @@ package squashfs // import "vimagination.zapto.org/squashfs"
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -119,7 +120,7 @@ func (s *squashfs) ReadFile(name string) ([]byte, error) {
 
 	buf := make([]byte, ff.file.fileSize)
 
-	if _, err = ff.read(buf); err != nil {
+	if _, err = ff.read(buf); err != nil && !errors.Is(err, io.EOF) {
 		return nil, err
 	}
 
