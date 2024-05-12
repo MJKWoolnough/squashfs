@@ -22,6 +22,8 @@ type dir struct {
 const (
 	dirFileSizeOffset  = 3
 	dirLinkCountOffset = 2
+	dirHeaderSize      = 12
+	dirBodySize        = 8
 )
 
 func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
@@ -88,7 +90,7 @@ func (d *dir) readDirEntry(ler *byteio.StickyLittleEndianReader) dirEntry {
 		d.start = ler.ReadUint32()
 		ler.ReadUint32()
 
-		d.read += 12
+		d.read += dirHeaderSize
 	} else {
 		d.count--
 	}
@@ -103,7 +105,7 @@ func (d *dir) readDirEntry(ler *byteio.StickyLittleEndianReader) dirEntry {
 		ptr:      uint64(d.start<<metadataPointerShift) | offset,
 	}
 
-	d.read += 8 + len(de.name)
+	d.read += dirBodySize + len(de.name)
 
 	return de
 }
