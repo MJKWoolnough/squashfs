@@ -141,8 +141,9 @@ func (s *squashfs) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 type FS interface {
-	fs.StatFS
 	fs.ReadFileFS
+	fs.ReadDirFS
+	fs.StatFS
 
 	// Lstat returns a FileInfo describing the named file. If the file is a
 	// symbolic link, the returned FileInfo describes the symbolic link.
