@@ -412,7 +412,32 @@ func TestReadDir(t *testing.T) {
 
 				return nil
 			},
+			func(sfs FS) error {
+				entries, err := sfs.ReadDir("dirB")
+				if err != nil {
+					return err
+				}
+
+				if len(entries) != 1 {
+					return fmt.Errorf("expecting 1 entry, got %d", len(entries))
+				}
+
+				if name := entries[0].Name(); name != "childA" {
+					return fmt.Errorf("expecting entry to be %q, got %q", "childA", name)
+				}
+
+				for n, child := range [...]string{"childA", "childB", "childC"} {
+					if name := entries[n].Name(); name != child {
+						return fmt.Errorf("expecting entry %d to be %q, got %q", n+1, child, name)
+					}
+				}
+
+				return nil
+			},
 		},
 		dirData("dirA", []child{}),
+		dirData("dirB", []child{
+			fileData("childA", ""),
+		}),
 	)
 }
