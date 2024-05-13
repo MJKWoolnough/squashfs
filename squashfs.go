@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	headerLength = 104
-	magic        = 0x73717368 // hsqs
+	headerLength     = 104
+	magic            = 0x73717368 // hsqs
+	defaultCacheSize = 1024
 )
 
 type superblock struct {
@@ -159,7 +160,7 @@ type FS interface {
 // The returned fs.FS, and any files opened from it will cease to work if the
 // io.ReaderAt is closed.
 func Open(r io.ReaderAt) (FS, error) {
-	return OpenWithCacheSize(r, 1024)
+	return OpenWithCacheSize(r, defaultCacheSize)
 }
 
 // OpenWithCacheSize acts like Open, but allows a custom cache size, which
