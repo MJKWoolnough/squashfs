@@ -374,6 +374,7 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 
 	typ := ler.ReadUint16()
 	perms := ler.ReadUint16()
+
 	uid, err := s.getID(ler.ReadUint16())
 	if err != nil {
 		return nil, err
