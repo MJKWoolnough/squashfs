@@ -86,6 +86,8 @@ func (s *superblock) readSuperBlockDetails(ler *byteio.StickyLittleEndianReader)
 type squashfs struct {
 	superblock superblock
 	reader     io.ReaderAt
+
+	blockCache blockCache
 }
 
 func (s *squashfs) Open(path string) (fs.File, error) {
@@ -165,6 +167,7 @@ func Open(r io.ReaderAt) (FS, error) {
 	return &squashfs{
 		superblock: sb,
 		reader:     r,
+		blockCache: newBlockCache(1024),
 	}, nil
 }
 

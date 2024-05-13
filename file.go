@@ -116,7 +116,7 @@ func (f *file) getBlockReader(block int) (io.Reader, error) {
 
 	size := int64(f.file.blockSizes[block])
 	if size&compressionMask == 0 {
-		return f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, start, size))
+		return f.squashfs.blockCache.getBlock(start, io.NewSectionReader(f.squashfs.reader, start, size), f.squashfs.superblock.Compressor)
 	}
 
 	return io.NewSectionReader(f.squashfs.reader, start, size&sizeMask), nil
@@ -152,7 +152,7 @@ func (f *file) getFragmentReader() (io.Reader, error) {
 	fragmentSize := int64(f.file.fileSize) % int64(f.squashfs.superblock.BlockSize)
 
 	if size&compressionMask == 0 {
-		reader, err := f.squashfs.superblock.Compressor.decompress(io.NewSectionReader(f.squashfs.reader, int64(start), int64(size)))
+		reader, err := f.squashfs.blockCache.getBlock(int64(start), io.NewSectionReader(f.squashfs.reader, int64(start), int64(size)), f.squashfs.superblock.Compressor)
 		if err != nil {
 			return nil, err
 		}
