@@ -44,6 +44,7 @@ func (b *blockCache) getBlock(ptr int64, r io.ReadSeeker, c Compressor) (io.Read
 
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
 	if cb = b.getExistingBlock(ptr); cb != nil {
 		return cb, nil
 	}
