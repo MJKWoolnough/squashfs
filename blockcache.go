@@ -24,6 +24,15 @@ func newBlockCache(length uint) blockCache {
 }
 
 func (b *blockCache) getBlock(ptr int64, r io.ReadSeeker, c Compressor) (io.ReadSeeker, error) {
+	data, err := b.getOrSetBlock(ptr, r, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(data), nil
+}
+
+func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]byte, error) {
 	b.mu.RLock()
 	cb := b.getExistingBlock(ptr)
 	b.mu.RUnlock()
@@ -65,13 +74,13 @@ func (b *blockCache) getBlock(ptr int64, r io.ReadSeeker, c Compressor) (io.Read
 		b.cache = append(b.cache, block)
 	}
 
-	return bytes.NewReader(data), nil
+	return data, nil
 }
 
-func (b *blockCache) getExistingBlock(ptr int64) io.ReadSeeker {
+func (b *blockCache) getExistingBlock(ptr int64) []byte {
 	for _, cb := range b.cache {
 		if cb.ptr == ptr {
-			return bytes.NewReader(cb.data)
+			return cb.data
 		}
 	}
 
