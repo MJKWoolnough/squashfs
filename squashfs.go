@@ -162,6 +162,8 @@ func Open(r io.ReaderAt) (FS, error) {
 	return OpenWithCacheSize(r, 1024)
 }
 
+// OpenWithCacheSize acts like Open, but allows a custom cache size, which
+// normally defaults to 1024.
 func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (FS, error) {
 	var sb superblock
 	if err := sb.readFrom(io.NewSectionReader(r, 0, headerLength)); err != nil {
