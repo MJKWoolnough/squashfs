@@ -77,7 +77,7 @@ func readSqfsFile(sfs fs.FS, path, expectation string) error {
 func TestOpenRead(t *testing.T) {
 	test(
 		t,
-		false,
+		true,
 		[]testFn{
 			func(sfs FS) error {
 				return readSqfsFile(sfs, filepath.Join("dirA", "fileA"), contentsA)
@@ -152,7 +152,7 @@ func TestOpenReadAt(t *testing.T) {
 
 	test(
 		t,
-		false,
+		true,
 		[]testFn{
 			func(sfs FS) error {
 				a, err := sfs.Open("dirA/fileE")
@@ -190,7 +190,7 @@ func TestSeek(t *testing.T) {
 
 	test(
 		t,
-		false,
+		true,
 		[]testFn{
 			func(sfs FS) error {
 				a, err := sfs.Open("dirA/fileE")
