@@ -159,6 +159,10 @@ type FS interface {
 // The returned fs.FS, and any files opened from it will cease to work if the
 // io.ReaderAt is closed.
 func Open(r io.ReaderAt) (FS, error) {
+	return OpenWithCacheSize(r, 1024)
+}
+
+func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (FS, error) {
 	var sb superblock
 	if err := sb.readFrom(io.NewSectionReader(r, 0, headerLength)); err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
@@ -167,7 +171,7 @@ func Open(r io.ReaderAt) (FS, error) {
 	return &squashfs{
 		superblock: sb,
 		reader:     r,
-		blockCache: newBlockCache(1024),
+		blockCache: newBlockCache(cacheSize),
 	}, nil
 }
 
