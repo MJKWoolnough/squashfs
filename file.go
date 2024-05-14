@@ -157,11 +157,7 @@ func (f *file) getFragmentReader() (io.Reader, error) {
 			return nil, err
 		}
 
-		if err := skip(reader, int64(f.file.blockOffset)); err != nil {
-			return nil, err
-		}
-
-		return io.LimitReader(reader, fragmentSize), nil
+		return io.NewSectionReader(reader, int64(f.file.blockOffset), fragmentSize), nil
 	}
 
 	return io.NewSectionReader(f.squashfs.reader, int64(start)+int64(f.file.blockOffset), fragmentSize), nil
