@@ -3,6 +3,7 @@ package squashfs
 import (
 	"bytes"
 	"io"
+	"slices"
 	"sync"
 )
 
@@ -14,7 +15,6 @@ type cachedBlock struct {
 type blockCache struct {
 	mu    sync.RWMutex
 	cache []cachedBlock
-	pos   int
 }
 
 func newBlockCache(length uint) blockCache {
@@ -64,22 +64,21 @@ func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]
 	}
 
 	if len(b.cache) == cap(b.cache) {
-		b.cache[b.pos] = block
-
-		b.pos++
-		if b.pos == len(b.cache) {
-			b.pos = 0
-		}
-	} else {
-		b.cache = append(b.cache, block)
+		b.cache = b.cache[:len(b.cache)-1]
 	}
+
+	b.cache = slices.Insert(b.cache, 0, block)
 
 	return data, nil
 }
 
 func (b *blockCache) getExistingBlock(ptr int64) []byte {
-	for _, cb := range b.cache {
+	for n, cb := range b.cache {
 		if cb.ptr == ptr {
+			if n != 0 {
+				b.cache = slices.Insert(slices.Delete(b.cache, n, n+1), 0, cb)
+			}
+
 			return cb.data
 		}
 	}
