@@ -41,12 +41,7 @@ func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]
 		return cb, nil
 	}
 
-	cr, err := c.decompress(r)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := io.ReadAll(cr)
+	data, err := decompressBlock(r, c)
 	if err != nil {
 		return nil, err
 	}
@@ -84,4 +79,13 @@ func (b *blockCache) getExistingBlock(ptr int64) []byte {
 	}
 
 	return nil
+}
+
+func decompressBlock(r io.Reader, c Compressor) ([]byte, error) {
+	cr, err := c.decompress(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(cr)
 }
