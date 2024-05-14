@@ -38,18 +38,6 @@ func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
 	return b, nil
 }
 
-func skip(r io.Reader, count int64) error {
-	if s, ok := r.(io.Seeker); ok {
-		_, err := s.Seek(count, io.SeekCurrent)
-
-		return err
-	}
-
-	_, err := io.Copy(io.Discard, io.LimitReader(r, count))
-
-	return err
-}
-
 type blockReader struct {
 	*squashfs
 	r    io.ReadSeeker
