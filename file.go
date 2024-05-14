@@ -14,7 +14,7 @@ type file struct {
 
 	mu       sync.Mutex
 	squashfs *squashfs
-	reader   io.Reader
+	reader   io.ReadSeeker
 	pos      int64
 }
 
@@ -65,7 +65,7 @@ func (f *file) read(p []byte) (int, error) {
 	return n, err
 }
 
-func (f *file) getReader(block int) (io.Reader, error) {
+func (f *file) getReader(block int) (io.ReadSeeker, error) {
 	if block < len(f.file.blockSizes) {
 		return f.getBlockReader(block)
 	} else if f.file.fragIndex != fieldDisabled {
@@ -79,7 +79,7 @@ func (f *file) getBlockOffset(pos int64) (int, int64) {
 	return int(pos / int64(f.squashfs.superblock.BlockSize)), pos % int64(f.squashfs.superblock.BlockSize)
 }
 
-func (f *file) getOffsetReader(pos int64) (io.Reader, error) {
+func (f *file) getOffsetReader(pos int64) (io.ReadSeeker, error) {
 	if uint64(pos) >= f.file.fileSize {
 		return nil, io.ErrUnexpectedEOF
 	}
@@ -107,7 +107,7 @@ const (
 	fragmentIndexShift = 4
 )
 
-func (f *file) getBlockReader(block int) (io.Reader, error) {
+func (f *file) getBlockReader(block int) (io.ReadSeeker, error) {
 	start := int64(f.file.blocksStart)
 
 	for _, size := range f.file.blockSizes[:block] {
@@ -143,7 +143,7 @@ func (f *file) getFragmentDetails() (start uint64, size uint32, err error) {
 	return start, size, ler.Err
 }
 
-func (f *file) getFragmentReader() (io.Reader, error) {
+func (f *file) getFragmentReader() (io.ReadSeeker, error) {
 	start, size, err := f.getFragmentDetails()
 	if err != nil {
 		return nil, err
