@@ -91,7 +91,9 @@ func (b *blockReader) init(skipCount int64) error {
 	}
 
 	if skipCount > 0 {
-		return skip(b.r, skipCount)
+		_, err := b.r.Seek(skipCount, io.SeekStart)
+
+		return err
 	}
 
 	return nil
