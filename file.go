@@ -192,17 +192,15 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (f *file) setPos(base int64) (int64, error) {
-	if base > f.pos && f.reader != nil {
+	if f.reader != nil {
 		cBlock, _ := f.getBlockOffset(f.pos)
-		bBlock, _ := f.getBlockOffset(base)
+		bBlock, offset := f.getBlockOffset(base)
 
 		if cBlock != bBlock {
 			f.reader = nil
-		} else if _, err := f.reader.Seek(base-f.pos, io.SeekStart); err != nil {
+		} else if _, err := f.reader.Seek(offset, io.SeekStart); err != nil {
 			return f.pos, err
 		}
-	} else {
-		f.reader = nil
 	}
 
 	f.pos = base
