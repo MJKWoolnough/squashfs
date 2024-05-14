@@ -92,8 +92,7 @@ func (f *file) getOffsetReader(pos int64) (io.ReadSeeker, error) {
 	}
 
 	if skipBytes > 0 {
-		err = skip(reader, skipBytes)
-		if err != nil {
+		if _, err = reader.Seek(skipBytes, io.SeekStart); err != nil {
 			return nil, err
 		}
 	}
@@ -199,7 +198,7 @@ func (f *file) setPos(base int64) (int64, error) {
 
 		if cBlock != bBlock {
 			f.reader = nil
-		} else if err := skip(f.reader, base-f.pos); err != nil {
+		} else if _, err := f.reader.Seek(base-f.pos, io.SeekStart); err != nil {
 			return f.pos, err
 		}
 	} else {
