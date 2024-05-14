@@ -53,16 +53,14 @@ func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]
 		return cb, nil
 	}
 
-	block := cachedBlock{
-		ptr:  ptr,
-		data: data,
-	}
-
 	if len(b.cache) == cap(b.cache) {
 		b.cache = b.cache[:len(b.cache)-1]
 	}
 
-	b.cache = slices.Insert(b.cache, 0, block)
+	b.cache = slices.Insert(b.cache, 0, cachedBlock{
+		ptr:  ptr,
+		data: data,
+	})
 
 	return data, nil
 }
