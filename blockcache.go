@@ -23,7 +23,7 @@ func newBlockCache(length uint) blockCache {
 	}
 }
 
-func (b *blockCache) getBlock(ptr int64, r io.ReadSeeker, c Compressor) (io.ReadSeeker, error) {
+func (b *blockCache) getBlock(ptr int64, r io.ReadSeeker, c Compressor) (*bytes.Reader, error) {
 	data, err := b.getOrSetBlock(ptr, r, c)
 	if err != nil {
 		return nil, err
