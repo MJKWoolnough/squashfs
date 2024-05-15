@@ -55,18 +55,20 @@ func (f *file) read(p []byte) (int, error) {
 }
 
 func (f *file) prepareReader() error {
-	if f.reader == nil {
-		if uint64(f.pos) == f.file.fileSize {
-			return io.EOF
-		}
-
-		reader, err := f.getOffsetReader(f.pos)
-		if err != nil {
-			return err
-		}
-
-		f.reader = reader
+	if f.reader != nil {
+		return nil
 	}
+
+	if uint64(f.pos) == f.file.fileSize {
+		return io.EOF
+	}
+
+	reader, err := f.getOffsetReader(f.pos)
+	if err != nil {
+		return err
+	}
+
+	f.reader = reader
 
 	return nil
 }
