@@ -373,11 +373,10 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	ler := byteio.StickyLittleEndianReader{Reader: r}
 
 	typ := ler.ReadUint16()
-	perms := ler.ReadUint16()
 
 	common := commonStat{
 		name:  name,
-		perms: perms,
+		perms: ler.ReadUint16(),
 		uid:   s.getID(&ler),
 		gid:   s.getID(&ler),
 		mtime: time.Unix(int64(ler.ReadUint32()), 0),
