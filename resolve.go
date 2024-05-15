@@ -375,26 +375,15 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	typ := ler.ReadUint16()
 	perms := ler.ReadUint16()
 
-	uid, err := s.getID(ler.ReadUint16())
-	if err != nil {
-		return nil, err
-	}
-
-	gid, err := s.getID(ler.ReadUint16())
-	if err != nil {
-		return nil, err
-	}
-
-	mtime := ler.ReadUint32()
-	ler.ReadUint32() // inode number?
-
 	common := commonStat{
 		name:  name,
 		perms: perms,
-		uid:   uid,
-		gid:   gid,
-		mtime: time.Unix(int64(mtime), 0),
+		uid:   s.getID(&ler),
+		gid:   s.getID(&ler),
+		mtime: time.Unix(int64(ler.ReadUint32()), 0),
 	}
+
+	ler.ReadUint32() // inode number?
 
 	fi := s.readEntry(&ler, typ, common)
 
@@ -405,9 +394,12 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	return fi, nil
 }
 
-func (s *squashfs) getID(id uint16) (uint32, error) {
+func (s *squashfs) getID(ler *byteio.StickyLittleEndianReader) uint32 {
+	id := ler.ReadUint16()
 	if id >= s.superblock.IDCount {
-		return 0, fs.ErrInvalid
+		ler.Err = fs.ErrInvalid
+
+		return 0
 	}
 
 	const (
@@ -415,11 +407,12 @@ func (s *squashfs) getID(id uint16) (uint32, error) {
 		idLength   = 4
 	)
 
-	ler := byteio.LittleEndianReader{Reader: io.NewSectionReader(s.reader, int64(id<<idPosShift), idLength)}
+	r := ler.Reader
+	ler.Reader = io.NewSectionReader(s.reader, int64(id<<idPosShift), idLength)
+	pid := ler.ReadUint32()
+	ler.Reader = r
 
-	pid, _, err := ler.ReadUint32()
-
-	return pid, err
+	return pid
 }
 
 func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint16, totalSize uint32) (fs.FileInfo, error) {
