@@ -52,14 +52,12 @@ func (f *file) read(p []byte) (int, error) {
 		err = nil
 	}
 
-	if err == nil {
-		if n < len(p) {
-			var m int
+	if err == nil && n < len(p) {
+		var m int
 
-			m, err = f.read(p[n:])
+		m, err = f.read(p[n:])
 
-			n += m
-		}
+		n += m
 	}
 
 	return n, err
