@@ -487,9 +487,9 @@ func (r *resolver) resolve(root fs.FileInfo, resolveLast bool) (curr fs.FileInfo
 			continue
 		} else if err := r.handleSymlink(sym); err != nil {
 			return nil, err
-		} else {
-			curr = root
 		}
+
+		curr = root
 	}
 
 	return curr, nil
