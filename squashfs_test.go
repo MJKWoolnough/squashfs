@@ -57,12 +57,12 @@ func test(t *testing.T, runFSTest bool, tests []testFn, children ...child) {
 }
 
 func readSqfsFile(sfs fs.FS, path, expectation string) error {
-	a, err := sfs.Open(path)
+	f, err := sfs.Open(path)
 	if err != nil {
 		return fmt.Errorf("unexpected error opening file in squashfs FS: %w", err)
 	}
 
-	contents, err := io.ReadAll(a)
+	contents, err := io.ReadAll(f)
 	if err != nil {
 		return fmt.Errorf("unexpected error reading file in squashfs FS: %w", err)
 	}
