@@ -45,8 +45,7 @@ type blockReader struct {
 }
 
 func (b *blockReader) nextReader() error {
-	r := io.NewSectionReader(b.reader, b.next, blockHeaderSize)
-	ler := byteio.LittleEndianReader{Reader: r}
+	ler := byteio.LittleEndianReader{Reader: io.NewSectionReader(b.reader, b.next, blockHeaderSize)}
 
 	header, _, err := ler.ReadUint16()
 	if err != nil {
