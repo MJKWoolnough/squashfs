@@ -6,12 +6,14 @@ import (
 
 type Creater struct {
 	writer     io.WriterAt
-	compressor CompressorOptions
+	superblock superblock
 }
 
 func Create(w io.WriterAt) (*Creater, error) {
 	return &Creater{
-		writer:     w,
-		compressor: defaultGzipOptions(),
+		writer: w,
+		superblock: superblock{
+			CompressionOptions: defaultGzipOptions(),
+		},
 	}, nil
 }
