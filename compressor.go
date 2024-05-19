@@ -51,6 +51,7 @@ func (c Compressor) decompress(r io.Reader) (io.Reader, error) {
 type CompressorOptions interface {
 	makeWriter(io.Writer) (io.WriteCloser, error)
 	asCompressor() Compressor
+	isDefault() bool
 }
 
 func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEndianReader) (CompressorOptions, error) {
@@ -139,6 +140,10 @@ func (GZipOptions) asCompressor() Compressor {
 	return CompressorGZIP
 }
 
+func (g *GZipOptions) isDefault() bool {
+	return g.CompressionLevel == zlib.BestCompression && g.WindowSize == maximumWindowSize
+}
+
 type LZOOptions struct {
 	Algorithm        uint32
 	CompressionLevel uint32
@@ -163,16 +168,20 @@ func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (*LZOOptions, error) 
 	}, nil
 }
 
-func defaultLZOOptions() *LZOOptions {
-	const (
-		lzoDefaultAlgorithm        = 4
-		lzoDefaultCompressionLevel = 8
-	)
+const (
+	lzoDefaultAlgorithm        = 4
+	lzoDefaultCompressionLevel = 8
+)
 
+func defaultLZOOptions() *LZOOptions {
 	return &LZOOptions{
 		Algorithm:        lzoDefaultAlgorithm,
 		CompressionLevel: lzoDefaultCompressionLevel,
 	}
+}
+
+func (l *LZOOptions) isDefault() bool {
+	return l.CompressionLevel == lzoDefaultCompressionLevel && l.Algorithm == lzoDefaultAlgorithm
 }
 
 func (LZOOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
@@ -223,6 +232,10 @@ func (XZOptions) asCompressor() Compressor {
 	return CompressorXZ
 }
 
+func (x *XZOptions) isDefault() bool {
+	return x.DictionarySize == maxDictionarySize && x.Filters == 0
+}
+
 type LZ4Options struct {
 	Version uint32
 	Flags   uint32
@@ -250,6 +263,10 @@ func (LZ4Options) makeWriter(w io.Writer) (io.WriteCloser, error) {
 
 func (LZ4Options) asCompressor() Compressor {
 	return CompressorLZ4
+}
+
+func (LZ4Options) isDefault() bool {
+	return false
 }
 
 type ZStdOptions struct {
@@ -281,4 +298,8 @@ func (ZStdOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
 
 func (ZStdOptions) asCompressor() Compressor {
 	return CompressorZSTD
+}
+
+func (z *ZStdOptions) isDefault() bool {
+	return z.CompressionLevel == zlib.BestCompression
 }
