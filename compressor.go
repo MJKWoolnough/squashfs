@@ -50,6 +50,7 @@ func (c Compressor) decompress(r io.Reader) (io.Reader, error) {
 
 type CompressorOptions interface {
 	makeWriter(io.Writer) (io.WriteCloser, error)
+	asCompressor() Compressor
 }
 
 func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEndianReader) (CompressorOptions, error) {
@@ -134,6 +135,10 @@ func (g *GZipOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
 	return zlib.NewWriterLevel(w, int(g.CompressionLevel))
 }
 
+func (GZipOptions) asCompressor() Compressor {
+	return CompressorGZIP
+}
+
 type LZOOptions struct {
 	Algorithm        uint32
 	CompressionLevel uint32
@@ -174,6 +179,10 @@ func (LZOOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
+func (LZOOptions) asCompressor() Compressor {
+	return CompressorLZO
+}
+
 type XZOptions struct {
 	DictionarySize uint32
 	Filters        uint32
@@ -210,6 +219,10 @@ func (XZOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
+func (XZOptions) asCompressor() Compressor {
+	return CompressorXZ
+}
+
 type LZ4Options struct {
 	Version uint32
 	Flags   uint32
@@ -233,6 +246,10 @@ func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (*LZ4Options, error) 
 
 func (LZ4Options) makeWriter(w io.Writer) (io.WriteCloser, error) {
 	return nil, ErrUnsupportedCompressor
+}
+
+func (LZ4Options) asCompressor() Compressor {
+	return CompressorLZ4
 }
 
 type ZStdOptions struct {
@@ -260,4 +277,8 @@ func defaultZStdOptions() *ZStdOptions {
 
 func (ZStdOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
 	return nil, ErrUnsupportedCompressor
+}
+
+func (ZStdOptions) asCompressor() Compressor {
+	return CompressorZSTD
 }
