@@ -128,6 +128,10 @@ func defaultGzipOptions() *GZipOptions {
 	}
 }
 
+func (g *GZipOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
+	return zlib.NewWriterLevel(w, int(g.CompressionLevel))
+}
+
 type LZOOptions struct {
 	Algorithm        uint32
 	CompressionLevel uint32
