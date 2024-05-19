@@ -8,11 +8,7 @@ import (
 	"io/fs"
 )
 
-const (
-	headerLength     = 104
-	magic            = 0x73717368 // hsqs
-	defaultCacheSize = 1024
-)
+const defaultCacheSize = 1024
 
 type squashfs struct {
 	superblock superblock

@@ -9,6 +9,11 @@ import (
 	"vimagination.zapto.org/byteio"
 )
 
+const (
+	headerLength = 104
+	magic        = 0x73717368 // hsqs
+)
+
 type superblock struct {
 	Stats
 	IDCount            uint16
