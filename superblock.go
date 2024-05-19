@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/bits"
 	"time"
 
 	"vimagination.zapto.org/byteio"
@@ -78,6 +79,34 @@ func (s *superblock) readSuperBlockDetails(ler *byteio.StickyLittleEndianReader)
 	s.ExportTable = ler.ReadUint64()
 
 	return nil
+}
+
+func (s *superblock) writeTo(w io.Writer) error {
+	lew := byteio.StickyLittleEndianWriter{Writer: w}
+
+	lew.WriteUint32(magic)
+	lew.WriteUint32(s.Inodes)
+	lew.WriteUint32(uint32(s.ModTime.Unix()))
+	lew.WriteUint32(s.BlockSize)
+	lew.WriteUint32(s.FragCount)
+	lew.WriteUint16(uint16(s.Compressor))
+	lew.WriteUint16(uint16(bits.TrailingZeros32(s.BlockSize)))
+	lew.WriteUint16(s.Flags)
+	lew.WriteUint16(s.IDCount)
+	lew.WriteUint16(4)
+	lew.WriteUint16(0)
+	lew.WriteUint64(s.RootInode)
+	lew.WriteUint64(s.BytesUsed)
+	lew.WriteUint64(s.IDTable)
+	lew.WriteUint64(s.XattrTable)
+	lew.WriteUint64(s.InodeTable)
+	lew.WriteUint64(s.DirTable)
+	lew.WriteUint64(s.FragTable)
+	lew.WriteUint64(s.ExportTable)
+
+	s.CompressionOptions.writeTo(&lew)
+
+	return lew.Err
 }
 
 // Type Stats contains basic data about the SquashFS file, read from the
