@@ -52,6 +52,7 @@ type CompressorOptions interface {
 	makeWriter(io.Writer) (io.WriteCloser, error)
 	asCompressor() Compressor
 	isDefault() bool
+	writeTo(*byteio.StickyLittleEndianWriter)
 }
 
 func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEndianReader) (CompressorOptions, error) {
@@ -144,6 +145,12 @@ func (g *GZipOptions) isDefault() bool {
 	return g.CompressionLevel == zlib.BestCompression && g.WindowSize == maximumWindowSize
 }
 
+func (g *GZipOptions) writeTo(w *byteio.StickyLittleEndianWriter) {
+	w.WriteUint32(g.CompressionLevel)
+	w.WriteUint16(g.WindowSize)
+	w.WriteUint16(g.Strategies)
+}
+
 type LZOOptions struct {
 	Algorithm        uint32
 	CompressionLevel uint32
@@ -192,6 +199,11 @@ func (LZOOptions) asCompressor() Compressor {
 	return CompressorLZO
 }
 
+func (l *LZOOptions) writeTo(w *byteio.StickyLittleEndianWriter) {
+	w.WriteUint32(l.Algorithm)
+	w.WriteUint32(l.CompressionLevel)
+}
+
 type XZOptions struct {
 	DictionarySize uint32
 	Filters        uint32
@@ -236,6 +248,11 @@ func (x *XZOptions) isDefault() bool {
 	return x.DictionarySize == maxDictionarySize && x.Filters == 0
 }
 
+func (x *XZOptions) writeTo(w *byteio.StickyLittleEndianWriter) {
+	w.WriteUint32(x.DictionarySize)
+	w.WriteUint32(x.Filters)
+}
+
 type LZ4Options struct {
 	Version uint32
 	Flags   uint32
@@ -267,6 +284,11 @@ func (LZ4Options) asCompressor() Compressor {
 
 func (LZ4Options) isDefault() bool {
 	return false
+}
+
+func (l *LZ4Options) writeTo(w *byteio.StickyLittleEndianWriter) {
+	w.WriteUint32(l.Version)
+	w.WriteUint32(l.Flags)
 }
 
 type ZStdOptions struct {
@@ -302,4 +324,8 @@ func (ZStdOptions) asCompressor() Compressor {
 
 func (z *ZStdOptions) isDefault() bool {
 	return z.CompressionLevel == zlib.BestCompression
+}
+
+func (z *ZStdOptions) writeTo(w *byteio.StickyLittleEndianWriter) {
+	w.WriteUint32(z.CompressionLevel)
 }
