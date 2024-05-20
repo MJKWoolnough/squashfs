@@ -44,6 +44,14 @@ func Compression(c CompressorOptions) Option {
 	}
 }
 
+func ExportTable() Option {
+	return func(s *superblock) error {
+		s.Stats.Flags |= 0x80
+
+		return nil
+	}
+}
+
 type Creater struct {
 	writer     io.WriterAt
 	superblock superblock
@@ -54,7 +62,7 @@ func Create(w io.WriterAt, options ...Option) (*Creater, error) {
 		Stats: Stats{
 			BlockSize: defaultBlockSize,
 		},
-		CompressionOptions: defaultGzipOptions(),
+		CompressionOptions: DefaultGzipOptions(),
 	}
 
 	for _, o := range options {
