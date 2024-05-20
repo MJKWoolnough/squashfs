@@ -151,6 +151,26 @@ func (g *GZipOptions) writeTo(w *byteio.StickyLittleEndianWriter) {
 	w.WriteUint16(g.Strategies)
 }
 
+type LZMAOptions struct{}
+
+func DefaultLZMAOptions() LZMAOptions {
+	return LZMAOptions{}
+}
+
+func (LZMAOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
+	return nil, ErrUnsupportedCompressor
+}
+
+func (LZMAOptions) asCompressor() Compressor {
+	return CompressorLZMA
+}
+
+func (LZMAOptions) isDefault() bool {
+	return true
+}
+
+func (LZMAOptions) writeTo(_ *byteio.StickyLittleEndianWriter) {}
+
 type LZOOptions struct {
 	Algorithm        uint32
 	CompressionLevel uint32
