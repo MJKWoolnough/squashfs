@@ -20,6 +20,19 @@ func BlockSize(blockSize uint32) Option {
 		}
 
 		s.BlockSize = blockSize
+
+		return nil
+	}
+}
+
+func Compression(c CompressorOptions) Option {
+	return func(s *superblock) error {
+		if c == nil {
+			return ErrInvalidCompressor
+		}
+
+		s.CompressionOptions = c
+
 		return nil
 	}
 }
