@@ -9,8 +9,6 @@ import (
 	"vimagination.zapto.org/byteio"
 )
 
-type Compressor uint16
-
 const (
 	CompressorGZIP Compressor = 1
 	CompressorLZMA Compressor = 2
@@ -18,7 +16,21 @@ const (
 	CompressorXZ   Compressor = 4
 	CompressorLZ4  Compressor = 5
 	CompressorZSTD Compressor = 6
+
+	minimumWindowSize = 8
+	maximumWindowSize = 15
+
+	maxStrategy = 21
+
+	maxAlgorithm = 4
+
+	lzoDefaultAlgorithm        = 4
+	lzoDefaultCompressionLevel = 8
+
+	maxDictionarySize = 8192
 )
+
+type Compressor uint16
 
 func (c Compressor) String() string {
 	switch c {
@@ -96,11 +108,6 @@ type GZipOptions struct {
 	Strategies       uint16
 }
 
-const (
-	minimumWindowSize = 8
-	maximumWindowSize = 15
-)
-
 func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error) {
 	compressionlevel := ler.ReadUint32()
 	if compressionlevel == 0 || compressionlevel > zlib.BestCompression {
@@ -111,8 +118,6 @@ func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error
 	if windowsize < minimumWindowSize || windowsize > maximumWindowSize {
 		return nil, ErrInvalidWindowSize
 	}
-
-	const maxStrategy = 21
 
 	strategies := ler.ReadUint16()
 	if strategies > maxStrategy {
@@ -177,8 +182,6 @@ type LZOOptions struct {
 }
 
 func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (*LZOOptions, error) {
-	const maxAlgorithm = 4
-
 	algorithm := ler.ReadUint32()
 	if algorithm > maxAlgorithm {
 		return nil, ErrInvalidCompressionAlgorithm
@@ -194,11 +197,6 @@ func parseLZOOptions(ler *byteio.StickyLittleEndianReader) (*LZOOptions, error) 
 		CompressionLevel: compressionlevel,
 	}, nil
 }
-
-const (
-	lzoDefaultAlgorithm        = 4
-	lzoDefaultCompressionLevel = 8
-)
 
 func DefaultLZOOptions() *LZOOptions {
 	return &LZOOptions{
@@ -228,8 +226,6 @@ type XZOptions struct {
 	DictionarySize uint32
 	Filters        uint32
 }
-
-const maxDictionarySize = 8192
 
 func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
 	dictionarysize := ler.ReadUint32()
