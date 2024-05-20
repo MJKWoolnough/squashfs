@@ -61,7 +61,7 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 		if hasOptionsFlag {
 			return parseGZipOptions(ler)
 		} else {
-			return defaultGzipOptions(), nil
+			return DefaultGzipOptions(), nil
 		}
 	case CompressorLZMA:
 		return nil, ErrNoCompressorOptions
@@ -69,13 +69,13 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 		if hasOptionsFlag {
 			return parseLZOOptions(ler)
 		} else {
-			return defaultLZOOptions(), nil
+			return DefaultLZOOptions(), nil
 		}
 	case CompressorXZ:
 		if hasOptionsFlag {
 			return parseXZOptions(ler)
 		} else {
-			return defaultXZOptions(), nil
+			return DefaultXZOptions(), nil
 		}
 	case CompressorLZ4:
 		return parseLZ4Options(ler)
@@ -83,7 +83,7 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 		if hasOptionsFlag {
 			return parseZStdOptions(ler)
 		} else {
-			return defaultZStdOptions(), nil
+			return DefaultZStdOptions(), nil
 		}
 	}
 
@@ -126,7 +126,7 @@ func parseGZipOptions(ler *byteio.StickyLittleEndianReader) (*GZipOptions, error
 	}, nil
 }
 
-func defaultGzipOptions() *GZipOptions {
+func DefaultGzipOptions() *GZipOptions {
 	return &GZipOptions{
 		CompressionLevel: zlib.BestCompression,
 		WindowSize:       maximumWindowSize,
@@ -180,7 +180,7 @@ const (
 	lzoDefaultCompressionLevel = 8
 )
 
-func defaultLZOOptions() *LZOOptions {
+func DefaultLZOOptions() *LZOOptions {
 	return &LZOOptions{
 		Algorithm:        lzoDefaultAlgorithm,
 		CompressionLevel: lzoDefaultCompressionLevel,
@@ -230,7 +230,7 @@ func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
 	}, nil
 }
 
-func defaultXZOptions() *XZOptions {
+func DefaultXZOptions() *XZOptions {
 	return &XZOptions{
 		DictionarySize: maxDictionarySize,
 	}
@@ -308,7 +308,7 @@ func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (*ZStdOptions, error
 	}, nil
 }
 
-func defaultZStdOptions() *ZStdOptions {
+func DefaultZStdOptions() *ZStdOptions {
 	return &ZStdOptions{
 		CompressionLevel: zlib.BestCompression,
 	}
