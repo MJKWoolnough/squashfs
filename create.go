@@ -3,6 +3,7 @@ package squashfs
 import (
 	"io"
 	"math/bits"
+	"time"
 )
 
 const (
@@ -47,6 +48,14 @@ func Compression(c CompressorOptions) Option {
 func ExportTable() Option {
 	return func(s *superblock) error {
 		s.Stats.Flags |= 0x80
+
+		return nil
+	}
+}
+
+func ModTime(t uint32) Option {
+	return func(s *superblock) error {
+		s.Stats.ModTime = time.Unix(int64(t), 0)
 
 		return nil
 	}
