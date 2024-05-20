@@ -25,6 +25,13 @@ func BlockSize(blockSize uint32) Option {
 	}
 }
 
+var (
+	BlockSize4K   = BlockSize(minBlockSize)
+	BlockSize16K  = BlockSize(1 << 14)
+	BlockSize128K = BlockSize(defaultBlockSize)
+	BlockSize1M   = BlockSize(maxBlockSize)
+)
+
 func Compression(c CompressorOptions) Option {
 	return func(s *superblock) error {
 		if c == nil {
