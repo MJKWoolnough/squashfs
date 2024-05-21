@@ -18,6 +18,19 @@ type squashfs struct {
 }
 
 func (s *squashfs) Open(path string) (fs.File, error) {
+	f, err := s.open(path)
+	if err != nil {
+		return nil, &fs.PathError{
+			Op:   "open",
+			Path: path,
+			Err:  err,
+		}
+	}
+
+	return f, nil
+}
+
+func (s *squashfs) open(path string) (fs.File, error) {
 	f, err := s.resolve(path, true)
 	if err != nil {
 		return nil, err
@@ -37,6 +50,19 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 }
 
 func (s *squashfs) ReadFile(name string) ([]byte, error) {
+	d, err := s.readFile(name)
+	if err != nil {
+		return nil, &fs.PathError{
+			Op:   "readfile",
+			Path: name,
+			Err:  err,
+		}
+	}
+
+	return d, nil
+}
+
+func (s *squashfs) readFile(name string) ([]byte, error) {
 	f, err := s.Open(name)
 	if err != nil {
 		return nil, err
@@ -57,7 +83,20 @@ func (s *squashfs) ReadFile(name string) ([]byte, error) {
 }
 
 func (s *squashfs) ReadDir(name string) ([]fs.DirEntry, error) {
-	d, err := s.Open(name)
+	de, err := s.readDir(name)
+	if err != nil {
+		return nil, &fs.PathError{
+			Op:   "readdir",
+			Path: name,
+			Err:  err,
+		}
+	}
+
+	return de, nil
+}
+
+func (s *squashfs) readDir(name string) ([]fs.DirEntry, error) {
+	d, err := s.open(name)
 	if err != nil {
 		return nil, err
 	}
@@ -105,9 +144,27 @@ func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (FS, error) {
 }
 
 func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
-	return s.resolve(path, true)
+	fi, err := s.resolve(path, true)
+	if err != nil {
+		return nil, &fs.PathError{
+			Op:   "stat",
+			Path: path,
+			Err:  err,
+		}
+	}
+
+	return fi, nil
 }
 
 func (s *squashfs) LStat(path string) (fs.FileInfo, error) {
-	return s.resolve(path, false)
+	fi, err := s.resolve(path, false)
+	if err != nil {
+		return nil, &fs.PathError{
+			Op:   "lstat",
+			Path: path,
+			Err:  err,
+		}
+	}
+
+	return fi, nil
 }
