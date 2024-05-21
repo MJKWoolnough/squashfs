@@ -13,6 +13,8 @@ import (
 const (
 	headerLength = 104
 	magic        = 0x73717368 // hsqs
+	versionMajor = 4
+	versionMinor = 0
 )
 
 type superblock struct {
@@ -65,7 +67,7 @@ func (s *superblock) readSuperBlockDetails(ler *byteio.StickyLittleEndianReader)
 	s.Flags = ler.ReadUint16()
 	s.IDCount = ler.ReadUint16()
 
-	if ler.ReadUint16() != 4 || ler.ReadUint16() != 0 {
+	if ler.ReadUint16() != versionMajor || ler.ReadUint16() != versionMinor {
 		return ErrInvalidVersion
 	}
 
@@ -93,8 +95,8 @@ func (s *superblock) writeTo(w io.Writer) error {
 	lew.WriteUint16(uint16(bits.TrailingZeros32(s.BlockSize)))
 	lew.WriteUint16(s.Flags)
 	lew.WriteUint16(s.IDCount)
-	lew.WriteUint16(4)
-	lew.WriteUint16(0)
+	lew.WriteUint16(versionMajor)
+	lew.WriteUint16(versionMinor)
 	lew.WriteUint64(s.RootInode)
 	lew.WriteUint64(s.BytesUsed)
 	lew.WriteUint64(s.IDTable)
