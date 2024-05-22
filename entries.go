@@ -150,12 +150,10 @@ const fieldDisabled = 0xFFFFFFFF
 func (f *fileStat) readBlocks(ler *byteio.StickyLittleEndianReader, blockSize uint32) {
 	var blockCount uint64
 
-	if f.fileSize > 0 {
-		if f.fragIndex == fieldDisabled {
-			blockCount = 1 + (f.fileSize-1)/uint64(blockSize)
-		} else {
-			blockCount = f.fileSize / uint64(blockSize)
-		}
+	if f.fragIndex == fieldDisabled {
+		blockCount = 1 + (f.fileSize-1)/uint64(blockSize)
+	} else {
+		blockCount = f.fileSize / uint64(blockSize)
 	}
 
 	f.blockSizes = make([]uint32, blockCount)
