@@ -410,8 +410,8 @@ func (s *squashfs) getID(ler *byteio.StickyLittleEndianReader) uint32 {
 	return pid
 }
 
-func (s *squashfs) getDirEntry(name string, blockIndex uint32, blockOffset uint16, totalSize uint32) (fs.FileInfo, error) {
-	r, err := s.readMetadata(uint64(blockIndex)<<metadataPointerShift|uint64(blockOffset), s.superblock.DirTable)
+func (s *squashfs) getDirEntry(name string, index uint32, offset uint16, totalSize uint32) (fs.FileInfo, error) {
+	r, err := s.readMetadata(uint64(index)<<metadataPointerShift|uint64(offset), s.superblock.DirTable)
 	if err != nil {
 		return nil, err
 	}
