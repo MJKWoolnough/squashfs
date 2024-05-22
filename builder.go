@@ -4,12 +4,12 @@ import (
 	"io"
 )
 
-type Creater struct {
+type Builder struct {
 	writer     io.WriterAt
 	superblock superblock
 }
 
-func Create(w io.WriterAt, options ...Option) (*Creater, error) {
+func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 	s := superblock{
 		Stats: Stats{
 			BlockSize: defaultBlockSize,
@@ -23,7 +23,7 @@ func Create(w io.WriterAt, options ...Option) (*Creater, error) {
 		}
 	}
 
-	return &Creater{
+	return &Builder{
 		writer:     w,
 		superblock: s,
 	}, nil
