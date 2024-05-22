@@ -229,7 +229,9 @@ type XZOptions struct {
 
 func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
 	dictionarysize := ler.ReadUint32()
-	if lead, trail := bits.LeadingZeros32(dictionarysize), bits.TrailingZeros32(dictionarysize); dictionarysize < maxDictionarySize || 32-trail-lead > 2 {
+
+	lead, trail := bits.LeadingZeros32(dictionarysize), bits.TrailingZeros32(dictionarysize)
+	if dictionarysize < maxDictionarySize || 32-trail-lead > 2 {
 		return nil, ErrInvalidDictionarySize
 	}
 
