@@ -27,7 +27,9 @@ const (
 )
 
 func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
-	r, err := s.readMetadata(uint64(dirStat.blockIndex)<<metadataPointerShift|uint64(dirStat.blockOffset), s.superblock.DirTable)
+	ptr := uint64(dirStat.blockIndex)<<metadataPointerShift | uint64(dirStat.blockOffset)
+
+	r, err := s.readMetadata(ptr, s.superblock.DirTable)
 	if err != nil {
 		return nil, err
 	}
