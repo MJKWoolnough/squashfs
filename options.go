@@ -1,6 +1,7 @@
 package squashfs
 
 import (
+	"io/fs"
 	"math/bits"
 	"time"
 )
@@ -55,6 +56,23 @@ func ExportTable() Option {
 func ModTime(t uint32) Option {
 	return func(b *Builder) error {
 		b.superblock.Stats.ModTime = time.Unix(int64(t), 0)
+
+		return nil
+	}
+}
+
+func DefaultMode(m fs.FileMode) Option {
+	return func(b *Builder) error {
+		b.defaultMode = m
+
+		return nil
+	}
+}
+
+func DefaultOwner(owner, group uint32) Option {
+	return func(b *Builder) error {
+		b.defaultOwner = owner
+		b.defaultGroup = group
 
 		return nil
 	}

@@ -2,29 +2,35 @@ package squashfs
 
 import (
 	"io"
+	"io/fs"
 )
 
 type Builder struct {
 	writer     io.WriterAt
 	superblock superblock
+
+	defaultMode  fs.FileMode
+	defaultOwner uint32
+	defaultGroup uint32
 }
 
 func Create(w io.WriterAt, options ...Option) (*Builder, error) {
-	s := superblock{
-		Stats: Stats{
-			BlockSize: defaultBlockSize,
+	b := &Builder{
+		writer: w,
+
+		superblock: superblock{
+			Stats: Stats{
+				BlockSize: defaultBlockSize,
+			},
+			CompressionOptions: DefaultGzipOptions(),
 		},
-		CompressionOptions: DefaultGzipOptions(),
 	}
 
 	for _, o := range options {
-		if err := o(&s); err != nil {
+		if err := o(b); err != nil {
 			return nil, err
 		}
 	}
 
-	return &Builder{
-		writer:     w,
-		superblock: s,
-	}, nil
+	return b, nil
 }
