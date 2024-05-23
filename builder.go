@@ -3,6 +3,8 @@ package squashfs
 import (
 	"io"
 	"io/fs"
+	"slices"
+	"strings"
 )
 
 type Builder struct {
@@ -51,11 +53,26 @@ func (b *Builder) Dir(path string, mode fs.FileMode) error {
 }
 
 type node struct {
+	name         string
 	owner, group uint32
 	modTime      uint32
 	children     []*node
 }
 
 func (n *node) addDir(path string, mode fs.FileMode) error {
+	return nil
+}
+
+func (n *node) insertSortedNode(i *node) error {
+	pos, exists := slices.BinarySearchFunc(n.children, i, func(a, b *node) int {
+		return strings.Compare(a.name, b.name)
+	})
+
+	if exists {
+		return fs.ErrExist
+	}
+
+	n.children = slices.Insert(n.children, pos, i)
+
 	return nil
 }
