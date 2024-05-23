@@ -56,7 +56,7 @@ func (b *Builder) Dir(path string, mode fs.FileMode) error {
 		return fs.ErrExist
 	}
 
-	return b.addDir(b.root, path, b.defaultOwner, b.defaultGroup, mode)
+	return b.addChild(b.root, path, b.defaultOwner, b.defaultGroup, mode, false)
 }
 
 type node struct {
@@ -67,7 +67,7 @@ type node struct {
 	children     []*node
 }
 
-func (b *Builder) addDir(n *node, path string, owner, group uint32, mode fs.FileMode) error {
+func (b *Builder) addChild(n *node, path string, owner, group uint32, mode fs.FileMode, isFile bool) error {
 	first, rest := splitPath(path)
 
 	modTime := b.defaultModTime
@@ -87,7 +87,7 @@ func (b *Builder) addDir(n *node, path string, owner, group uint32, mode fs.File
 	p := n.insertSortedNode(o)
 
 	if rest != "" {
-		return b.addDir(p, rest, owner, group, mode)
+		return b.addChild(p, rest, owner, group, mode, isFile)
 	}
 
 	if o != p {
@@ -97,6 +97,10 @@ func (b *Builder) addDir(n *node, path string, owner, group uint32, mode fs.File
 	o.owner = owner
 	o.group = group
 	o.mode = mode
+
+	if isFile {
+		o.children = nil
+	}
 
 	return nil
 }
