@@ -37,8 +37,9 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 	}
 
 	b.root = &node{
-		owner: b.defaultOwner,
-		group: b.defaultGroup,
+		owner:    b.defaultOwner,
+		group:    b.defaultGroup,
+		children: make([]*node, 0),
 	}
 
 	return b, nil
@@ -49,7 +50,11 @@ func (b *Builder) Dir(path string, mode fs.FileMode) error {
 		return fs.ErrInvalid
 	}
 
-	return b.root.addDir(path, mode)
+	if path == "." {
+		return fs.ErrExist
+	}
+
+	return b.root.addDir(path, b.defaultOwner, b.defaultGroup, mode)
 }
 
 type node struct {
@@ -59,20 +64,48 @@ type node struct {
 	children     []*node
 }
 
-func (n *node) addDir(path string, mode fs.FileMode) error {
+func (n *node) addDir(path string, owner, group uint32, mode fs.FileMode) error {
+	first, rest := splitPath(path)
+
+	o := &node{
+		name:     first,
+		owner:    owner,
+		group:    group,
+		children: make([]*node, 0),
+	}
+
+	p := n.insertSortedNode(o)
+
+	if rest != "" {
+		return p.addDir(rest, owner, group, mode)
+	}
+
+	if o != p {
+		return fs.ErrExist
+	}
+
 	return nil
 }
 
-func (n *node) insertSortedNode(i *node) error {
+func (n *node) insertSortedNode(i *node) *node {
 	pos, exists := slices.BinarySearchFunc(n.children, i, func(a, b *node) int {
 		return strings.Compare(a.name, b.name)
 	})
 
 	if exists {
-		return fs.ErrExist
+		return n.children[pos]
 	}
 
 	n.children = slices.Insert(n.children, pos, i)
 
-	return nil
+	return i
+}
+
+func splitPath(path string) (string, string) {
+	pos := strings.IndexByte(path, '/')
+	if pos == -1 {
+		return "", path
+	}
+
+	return path[:pos], path[pos+1:]
 }
