@@ -5,15 +5,17 @@ import (
 	"io/fs"
 	"slices"
 	"strings"
+	"time"
 )
 
 type Builder struct {
 	writer     io.WriterAt
 	superblock superblock
 
-	defaultMode  fs.FileMode
-	defaultOwner uint32
-	defaultGroup uint32
+	defaultMode    fs.FileMode
+	defaultOwner   uint32
+	defaultGroup   uint32
+	defaultModTime time.Time
 
 	root *node
 }

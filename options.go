@@ -77,3 +77,11 @@ func DefaultOwner(owner, group uint32) Option {
 		return nil
 	}
 }
+
+func DefaultModTime(t time.Time) Option {
+	return func(b *Builder) error {
+		b.defaultTime = t
+
+		return nil
+	}
+}
