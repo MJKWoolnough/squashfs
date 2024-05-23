@@ -12,6 +12,8 @@ type Builder struct {
 	defaultMode  fs.FileMode
 	defaultOwner uint32
 	defaultGroup uint32
+
+	root *node
 }
 
 func Create(w io.WriterAt, options ...Option) (*Builder, error) {
@@ -32,5 +34,28 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		}
 	}
 
+	b.root = &node{
+		owner: b.defaultOwner,
+		group: b.defaultGroup,
+	}
+
 	return b, nil
+}
+
+func (b *Builder) Dir(path string, mode fs.FileMode) error {
+	if !fs.ValidPath(path) {
+		return fs.ErrInvalid
+	}
+
+	return b.root.addDir(path, mode)
+}
+
+type node struct {
+	owner, group uint32
+	modTime      uint32
+	children     []*node
+}
+
+func (n *node) addDir(path string, mode fs.FileMode) error {
+	return nil
 }
