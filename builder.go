@@ -38,10 +38,16 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		}
 	}
 
+	modTime := b.defaultModTime
+	if modTime.IsZero() {
+		modTime = time.Now()
+	}
+
 	b.root = &node{
 		owner:    b.defaultOwner,
 		group:    b.defaultGroup,
 		children: make([]*node, 0),
+		modTime:  modTime,
 	}
 
 	return b, nil
