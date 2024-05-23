@@ -38,19 +38,22 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		}
 	}
 
-	modTime := b.defaultModTime
-	if modTime.IsZero() {
-		modTime = time.Now()
-	}
-
 	b.root = &node{
 		owner:    b.defaultOwner,
 		group:    b.defaultGroup,
 		children: make([]*node, 0),
-		modTime:  modTime,
+		modTime:  b.nodeModTime(),
 	}
 
 	return b, nil
+}
+
+func (b *Builder) nodeModTime() time.Time {
+	if b.defaultModTime.IsZero() {
+		return time.Now()
+	}
+
+	return b.defaultModTime
 }
 
 func (b *Builder) Dir(path string, mode fs.FileMode) error {
@@ -76,17 +79,12 @@ type node struct {
 func (b *Builder) addChild(n *node, path string, owner, group uint32, mode fs.FileMode, isFile bool) error {
 	first, rest := splitPath(path)
 
-	modTime := b.defaultModTime
-	if modTime.IsZero() {
-		modTime = time.Now()
-	}
-
 	o := &node{
 		name:     first,
 		owner:    b.defaultOwner,
 		group:    b.defaultGroup,
 		mode:     b.defaultMode,
-		modTime:  modTime,
+		modTime:  b.nodeModTime(),
 		children: make([]*node, 0),
 	}
 
