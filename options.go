@@ -11,15 +11,15 @@ const (
 	maxBlockSize     = 1 << 20 // 1MB
 )
 
-type Option func(*superblock) error
+type Option func(*Builder) error
 
 func BlockSize(blockSize uint32) Option {
-	return func(s *superblock) error {
+	return func(b *Builder) error {
 		if blockSize < minBlockSize || blockSize > maxBlockSize || bits.OnesCount32(blockSize) != 1 {
 			return ErrInvalidBlockSize
 		}
 
-		s.BlockSize = blockSize
+		b.superblock.BlockSize = blockSize
 
 		return nil
 	}
@@ -33,28 +33,28 @@ var (
 )
 
 func Compression(c CompressorOptions) Option {
-	return func(s *superblock) error {
+	return func(b *Builder) error {
 		if c == nil {
 			return ErrInvalidCompressor
 		}
 
-		s.CompressionOptions = c
+		b.superblock.CompressionOptions = c
 
 		return nil
 	}
 }
 
 func ExportTable() Option {
-	return func(s *superblock) error {
-		s.Stats.Flags |= 0x80
+	return func(b *Builder) error {
+		b.superblock.Stats.Flags |= 0x80
 
 		return nil
 	}
 }
 
 func ModTime(t uint32) Option {
-	return func(s *superblock) error {
-		s.Stats.ModTime = time.Unix(int64(t), 0)
+	return func(b *Builder) error {
+		b.superblock.Stats.ModTime = time.Unix(int64(t), 0)
 
 		return nil
 	}
