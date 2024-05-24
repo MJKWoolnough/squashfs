@@ -110,10 +110,12 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 }
 
 func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
-	_, err := b.addNode(p, options...)
+	n, err := b.addNode(p, options...)
 	if err != nil {
 		return err
 	}
+
+	n.mode = fs.ModeSymlink | fs.ModePerm
 
 	return nil
 }
