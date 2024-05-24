@@ -3,6 +3,7 @@ package squashfs
 import (
 	"io"
 	"io/fs"
+	"path"
 	"slices"
 	"strings"
 	"time"
@@ -56,16 +57,32 @@ func (b *Builder) nodeModTime() time.Time {
 	return b.defaultModTime
 }
 
-func (b *Builder) Dir(path string, mode fs.FileMode) error {
-	if !fs.ValidPath(path) {
+func (b *Builder) Dir(p string, mode fs.FileMode) error {
+	if !fs.ValidPath(p) {
 		return fs.ErrInvalid
 	}
 
-	if path == "." {
+	if p == "." {
 		return fs.ErrExist
 	}
 
-	return b.addChild(b.root, path, b.defaultOwner, b.defaultGroup, mode, false)
+	n := &node{
+		name: path.Base(p),
+	}
+
+	if o := b.getParent(b.root, p); o == nil {
+		return fs.ErrInvalid
+	} else if n != o.insertSortedNode(n) {
+		return fs.ErrExist
+	}
+
+	n.children = make([]*node, 0)
+	n.modTime = b.nodeModTime()
+	n.mode = mode
+	n.owner = b.defaultOwner
+	n.group = b.defaultGroup
+
+	return nil
 }
 
 type node struct {
@@ -76,37 +93,27 @@ type node struct {
 	children     []*node
 }
 
-func (b *Builder) addChild(n *node, path string, owner, group uint32, mode fs.FileMode, isFile bool) error {
+func (b *Builder) getParent(n *node, path string) *node {
 	first, rest := splitPath(path)
 
-	o := &node{
+	if first == "" {
+		return n
+	}
+
+	p := n.insertSortedNode(&node{
 		name:     first,
 		owner:    b.defaultOwner,
 		group:    b.defaultGroup,
 		mode:     b.defaultMode,
 		modTime:  b.nodeModTime(),
 		children: make([]*node, 0),
-	}
-
-	p := n.insertSortedNode(o)
+	})
 
 	if rest != "" {
-		return b.addChild(p, rest, owner, group, mode, isFile)
+		return b.getParent(p, rest)
 	}
 
-	if o != p {
-		return fs.ErrExist
-	}
-
-	o.owner = owner
-	o.group = group
-	o.mode = mode
-
-	if isFile {
-		o.children = nil
-	}
-
-	return nil
+	return p
 }
 
 func (n *node) insertSortedNode(i *node) *node {
