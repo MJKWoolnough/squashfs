@@ -57,7 +57,7 @@ func (b *Builder) nodeModTime() time.Time {
 	return b.defaultModTime
 }
 
-func (b *Builder) Dir(p string, mode fs.FileMode) error {
+func (b *Builder) Dir(p string, options ...InodeOption) error {
 	if !fs.ValidPath(p) {
 		return fs.ErrInvalid
 	}
@@ -78,9 +78,13 @@ func (b *Builder) Dir(p string, mode fs.FileMode) error {
 
 	n.children = make([]*node, 0)
 	n.modTime = b.nodeModTime()
-	n.mode = mode
+	n.mode = b.defaultMode
 	n.owner = b.defaultOwner
 	n.group = b.defaultGroup
+
+	for _, opt := range options {
+		opt(n)
+	}
 
 	return nil
 }
