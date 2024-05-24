@@ -53,7 +53,7 @@ func ExportTable() Option {
 	}
 }
 
-func ModTime(t uint32) Option {
+func SqfsModTime(t uint32) Option {
 	return func(b *Builder) error {
 		b.superblock.Stats.ModTime = time.Unix(int64(t), 0)
 
@@ -80,8 +80,29 @@ func DefaultOwner(owner, group uint32) Option {
 
 func DefaultModTime(t time.Time) Option {
 	return func(b *Builder) error {
-		b.defaultTime = t
+		b.defaultModTime = t
 
 		return nil
+	}
+}
+
+type InodeOption func(*node)
+
+func Owner(owner, group uint32) InodeOption {
+	return func(n *node) {
+		n.owner = owner
+		n.group = group
+	}
+}
+
+func ModTime(t time.Time) InodeOption {
+	return func(n *node) {
+		n.modTime = t
+	}
+}
+
+func Mode(m fs.FileMode) InodeOption {
+	return func(n *node) {
+		n.mode = m
 	}
 }
