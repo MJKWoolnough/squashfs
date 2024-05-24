@@ -58,12 +58,23 @@ func (b *Builder) nodeModTime() time.Time {
 }
 
 func (b *Builder) Dir(p string, options ...InodeOption) error {
+	n, err := b.addNode(p, options...)
+	if err != nil {
+		return err
+	}
+
+	n.children = make([]*node, 0)
+
+	return nil
+}
+
+func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
 	if !fs.ValidPath(p) {
-		return fs.ErrInvalid
+		return nil, fs.ErrInvalid
 	}
 
 	if p == "." {
-		return fs.ErrExist
+		return nil, fs.ErrExist
 	}
 
 	n := &node{
@@ -71,12 +82,11 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 	}
 
 	if o := b.getParent(b.root, p); o == nil {
-		return fs.ErrInvalid
+		return nil, fs.ErrInvalid
 	} else if n != o.insertSortedNode(n) {
-		return fs.ErrExist
+		return nil, fs.ErrExist
 	}
 
-	n.children = make([]*node, 0)
 	n.modTime = b.nodeModTime()
 	n.mode = b.defaultMode
 	n.owner = b.defaultOwner
@@ -86,7 +96,7 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 		opt(n)
 	}
 
-	return nil
+	return n, nil
 }
 
 type node struct {
