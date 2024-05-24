@@ -99,6 +99,24 @@ func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
 	return n, nil
 }
 
+func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
+	_, err := b.addNode(p, options...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
+	_, err := b.addNode(p, options...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type node struct {
 	name         string
 	owner, group uint32
