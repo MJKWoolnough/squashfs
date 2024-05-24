@@ -88,13 +88,16 @@ func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
 		return nil, fs.ErrExist
 	}
 
-	n.modTime = b.nodeModTime()
 	n.mode = b.defaultMode | fs.ModePerm
 	n.owner = b.defaultOwner
 	n.group = b.defaultGroup
 
 	for _, opt := range options {
 		opt(n)
+	}
+
+	if n.modTime.IsZero() {
+		n.modTime = b.nodeModTime()
 	}
 
 	return n, nil
