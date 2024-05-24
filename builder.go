@@ -64,6 +64,7 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 	}
 
 	n.children = make([]*node, 0)
+	n.mode |= fs.ModeDir
 
 	return nil
 }
@@ -88,7 +89,7 @@ func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
 	}
 
 	n.modTime = b.nodeModTime()
-	n.mode = b.defaultMode
+	n.mode = b.defaultMode | fs.ModePerm
 	n.owner = b.defaultOwner
 	n.group = b.defaultGroup
 
