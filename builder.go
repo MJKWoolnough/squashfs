@@ -78,9 +78,7 @@ func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
 		return nil, fs.ErrExist
 	}
 
-	n := &node{
-		name: path.Base(p),
-	}
+	n := &node{name: path.Base(p)}
 
 	if o := b.getParent(b.root, p); o == nil {
 		return nil, fs.ErrInvalid
