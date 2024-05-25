@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"vimagination.zapto.org/byteio"
 	"vimagination.zapto.org/memio"
 )
 
@@ -184,7 +185,7 @@ func splitPath(path string) (string, string) {
 
 type blockWriter struct {
 	w            *io.OffsetWriter
-	uncompressed []byte
+	uncompressed memio.LimitedBuffer
 	compressed   memio.LimitedBuffer
 	compressor   compressedWriter
 }
@@ -192,7 +193,16 @@ type blockWriter struct {
 func newBlockWriter(w io.WriterAt, start int64, blockSize int, compressor compressedWriter) blockWriter {
 	return blockWriter{
 		w:            io.NewOffsetWriter(w, start),
-		uncompressed: make([]byte, blockSize),
+		uncompressed: make(memio.LimitedBuffer, blockSize),
+		compressed:   make(memio.LimitedBuffer, 0, blockSize),
+		compressor:   compressor,
+	}
+}
+
+func newMetadataWriter(w io.WriterAt, start int64, compressor compressedWriter) blockWriter {
+	return blockWriter{
+		w:            io.NewOffsetWriter(w, start),
+		uncompressed: make(memio.LimitedBuffer, 0, blockSize),
 		compressed:   make(memio.LimitedBuffer, 0, blockSize),
 		compressor:   compressor,
 	}
@@ -208,8 +218,7 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 	var sizes []uint32
 
 	for {
-		_, err := io.ReadFull(r, b.uncompressed)
-		if errors.Is(err, io.EOF) {
+		if _, err := io.ReadFull(r, b.uncompressed); errors.Is(err, io.EOF) {
 			break
 		} else if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 			return nil, err
@@ -219,22 +228,66 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 
 		b.compressor.Reset(&c)
 
-		var toWrite []byte
-
-		if _, err = b.compressor.Write(b.uncompressed); errors.Is(err, io.ErrShortWrite) {
-			toWrite = b.uncompressed
-		} else if err != nil {
-			return nil, err
-		} else {
-			toWrite = c
-		}
-
-		if _, err = b.w.Write(toWrite); err != nil {
+		n, err := b.w.Write(b.compressedOrUncompressed())
+		if err != nil {
 			return nil, err
 		}
 
-		sizes = append(sizes, uint32(len(toWrite)))
+		sizes = append(sizes, uint32(n))
 	}
 
 	return sizes, nil
+}
+
+func (b *blockWriter) compressedOrUncompressed() memio.LimitedBuffer {
+	if _, err := b.compressor.Write(b.uncompressed); !errors.Is(err, io.ErrShortWrite) {
+		return b.compressed
+	}
+
+	return b.uncompressed
+}
+
+func (b *blockWriter) WriteMetadata(data []byte) error {
+	for len(data) > 0 {
+		n, _ := b.uncompressed.Write(data)
+
+		data = data[n:]
+
+		if len(b.uncompressed) != cap(b.uncompressed) {
+			continue
+		}
+
+		if err := b.Flush(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *blockWriter) Flush() error {
+	lew := byteio.LittleEndianWriter{Writer: b.w}
+	data := b.compressedOrUncompressed()
+	header := uint16(len(data))
+
+	if header == 0 {
+		return nil
+	}
+
+	if &data[0] == &b.uncompressed[0] {
+		header |= metadataBlockCompressedMask
+	}
+
+	b.uncompressed = b.uncompressed[:0]
+	b.compressed = b.compressed[:0]
+
+	if _, err := lew.WriteUint16(header); err != nil {
+		return err
+	}
+
+	if _, err := b.w.Write(data); err != nil {
+		return err
+	}
+
+	return nil
 }
