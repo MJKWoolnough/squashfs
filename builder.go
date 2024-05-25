@@ -198,6 +198,12 @@ func newBlockWriter(w io.WriterAt, start int64, blockSize int, compressor compre
 	}
 }
 
+func (b *blockWriter) Pos() int64 {
+	pos, _ := b.w.Seek(0, io.SeekCurrent)
+
+	return pos
+}
+
 func (b *blockWriter) writeFile(r io.Reader) ([]uint32, error) {
 	var sizes []uint32
 
