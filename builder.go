@@ -1,12 +1,15 @@
 package squashfs
 
 import (
+	"errors"
 	"io"
 	"io/fs"
 	"path"
 	"slices"
 	"strings"
 	"time"
+
+	"vimagination.zapto.org/memio"
 )
 
 type Builder struct {
@@ -183,17 +186,52 @@ func splitPath(path string) (string, string) {
 }
 
 type blockWriter struct {
-	w                        io.WriterAt
-	pos                      int64
-	uncompressed, compressed []byte
-	compressor               compressedWriter
+	w            *io.OffsetWriter
+	uncompressed []byte
+	compressed   memio.LimitedBuffer
+	compressor   compressedWriter
 }
 
-func newBlockWriter(w io.WriterAt, blockSize int, compressor compressedWriter) blockWriter {
+func newBlockWriter(w io.WriterAt, start int64, blockSize int, compressor compressedWriter) blockWriter {
 	return blockWriter{
-		w:            w,
+		w:            io.NewOffsetWriter(w, start),
 		uncompressed: make([]byte, blockSize),
-		compressed:   make([]byte, blockSize),
+		compressed:   make(memio.LimitedBuffer, 0, blockSize),
 		compressor:   compressor,
 	}
+}
+
+func (b *blockWriter) writeFile(r io.Reader) ([]uint32, error) {
+	var sizes []uint32
+
+	for {
+		_, err := io.ReadFull(r, b.uncompressed)
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, err
+		}
+
+		c := b.compressed
+
+		b.compressor.Reset(&c)
+
+		var toWrite []byte
+
+		if _, err = b.compressor.Write(b.uncompressed); errors.Is(err, io.ErrShortWrite) {
+			toWrite = b.uncompressed
+		} else if err != nil {
+			return nil, err
+		} else {
+			toWrite = c
+		}
+
+		if _, err = b.w.Write(toWrite); err != nil {
+			return nil, err
+		}
+
+		sizes = append(sizes, uint32(len(toWrite)))
+	}
+
+	return sizes, nil
 }
