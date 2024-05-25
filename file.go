@@ -110,7 +110,7 @@ func (f *file) getOffsetReader(pos int64) (io.ReadSeeker, error) {
 
 const (
 	sizeMask           = 0x00ffffff
-	compressionMask    = 0xff000000
+	compressionMask    = 0x01000000
 	fragmentMDShift    = 10
 	fragmentMDLen      = 8
 	fragmentIndexShift = 4
