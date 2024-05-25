@@ -60,8 +60,14 @@ func (c Compressor) decompress(r io.Reader) (io.Reader, error) {
 	}
 }
 
+type compressedWriter interface {
+	io.Writer
+	Reset(io.Writer)
+	Flush() error
+}
+
 type CompressorOptions interface {
-	makeWriter(io.Writer) (io.WriteCloser, error)
+	getCompressedWriter() (compressedWriter, error)
 	asCompressor() Compressor
 	isDefault() bool
 	writeTo(*byteio.StickyLittleEndianWriter)
@@ -138,8 +144,8 @@ func DefaultGzipOptions() *GZipOptions {
 	}
 }
 
-func (g *GZipOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
-	return zlib.NewWriterLevel(w, int(g.CompressionLevel))
+func (g *GZipOptions) getCompressedWriter() (compressedWriter, error) {
+	return zlib.NewWriterLevel(nil, int(g.CompressionLevel))
 }
 
 func (GZipOptions) asCompressor() Compressor {
@@ -162,7 +168,7 @@ func DefaultLZMAOptions() LZMAOptions {
 	return LZMAOptions{}
 }
 
-func (LZMAOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
+func (LZMAOptions) getCompressedWriter() (compressedWriter, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
@@ -209,7 +215,7 @@ func (l *LZOOptions) isDefault() bool {
 	return l.CompressionLevel == lzoDefaultCompressionLevel && l.Algorithm == lzoDefaultAlgorithm
 }
 
-func (LZOOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
+func (LZOOptions) getCompressedWriter() (compressedWriter, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
@@ -254,7 +260,7 @@ func DefaultXZOptions() *XZOptions {
 	}
 }
 
-func (XZOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
+func (XZOptions) getCompressedWriter() (compressedWriter, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
@@ -292,7 +298,7 @@ func parseLZ4Options(ler *byteio.StickyLittleEndianReader) (*LZ4Options, error) 
 	}, nil
 }
 
-func (LZ4Options) makeWriter(w io.Writer) (io.WriteCloser, error) {
+func (LZ4Options) getCompressedWriter() (compressedWriter, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
@@ -332,7 +338,7 @@ func DefaultZStdOptions() *ZStdOptions {
 	}
 }
 
-func (ZStdOptions) makeWriter(w io.Writer) (io.WriteCloser, error) {
+func (ZStdOptions) getCompressedWriter() (compressedWriter, error) {
 	return nil, ErrUnsupportedCompressor
 }
 
