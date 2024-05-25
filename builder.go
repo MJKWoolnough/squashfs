@@ -204,7 +204,7 @@ func (b *blockWriter) Pos() int64 {
 	return pos
 }
 
-func (b *blockWriter) writeFile(r io.Reader) ([]uint32, error) {
+func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 	var sizes []uint32
 
 	for {
