@@ -181,3 +181,19 @@ func splitPath(path string) (string, string) {
 
 	return path[:pos], path[pos+1:]
 }
+
+type blockWriter struct {
+	w                        io.WriterAt
+	pos                      int64
+	uncompressed, compressed []byte
+	compressor               compressedWriter
+}
+
+func newBlockWriter(w io.WriterAt, blockSize int, compressor compressedWriter) blockWriter {
+	return blockWriter{
+		w:            w,
+		uncompressed: make([]byte, blockSize),
+		compressed:   make([]byte, blockSize),
+		compressor:   compressor,
+	}
+}
