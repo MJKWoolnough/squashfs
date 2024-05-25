@@ -140,9 +140,13 @@ func (b *Builder) getParent(n *node, path string) *node {
 		name:     first,
 		owner:    b.defaultOwner,
 		group:    b.defaultGroup,
-		mode:     b.defaultMode,
+		mode:     fs.ModeDir | b.defaultMode,
 		children: make([]*node, 0),
 	})
+
+	if !p.mode.IsDir() {
+		return nil
+	}
 
 	if p.modTime.IsZero() {
 		p.modTime = b.nodeModTime()
