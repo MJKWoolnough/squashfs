@@ -43,10 +43,9 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 	}
 
 	b.root = &node{
-		owner:    b.defaultOwner,
-		group:    b.defaultGroup,
-		children: make([]*node, 0),
-		modTime:  b.nodeModTime(),
+		owner:   b.defaultOwner,
+		group:   b.defaultGroup,
+		modTime: b.nodeModTime(),
 	}
 
 	return b, nil
@@ -66,7 +65,6 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 		return err
 	}
 
-	n.children = make([]*node, 0)
 	n.mode |= fs.ModeDir
 
 	return nil
@@ -140,11 +138,10 @@ func (b *Builder) getParent(n *node, path string) *node {
 	}
 
 	p := n.insertSortedNode(&node{
-		name:     first,
-		owner:    b.defaultOwner,
-		group:    b.defaultGroup,
-		mode:     fs.ModeDir | b.defaultMode,
-		children: make([]*node, 0),
+		name:  first,
+		owner: b.defaultOwner,
+		group: b.defaultGroup,
+		mode:  fs.ModeDir | b.defaultMode,
 	})
 
 	if !p.mode.IsDir() {
