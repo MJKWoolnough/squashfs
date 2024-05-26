@@ -329,6 +329,29 @@ func (s symlinkStat) Sys() any {
 	return s
 }
 
+func (s symlinkStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if s.xattrIndex != fieldDisabled {
+		s.writeExtTo(lew)
+	} else {
+		s.writeBasicTo(lew)
+	}
+}
+
+func (s symlinkStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtSymlink)
+	s.commonStat.writeTo(lew)
+	lew.WriteUint32(s.linkCount)
+	lew.WriteString32(s.targetPath)
+	lew.WriteUint32(s.xattrIndex)
+}
+
+func (s symlinkStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicSymlink)
+	s.commonStat.writeTo(lew)
+	lew.WriteUint32(s.linkCount)
+	lew.WriteString32(s.targetPath)
+}
+
 type blockStat struct {
 	commonStat
 	linkCount    uint32
