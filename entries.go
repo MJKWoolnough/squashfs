@@ -42,6 +42,14 @@ func (c commonStat) Type() fs.FileMode {
 	return c.Mode().Type()
 }
 
+func (c commonStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(c.perms)
+	lew.WriteUint16(uint16(c.uid))
+	lew.WriteUint16(uint16(c.gid))
+	lew.WriteUint32(uint32(c.mtime.Unix()))
+	lew.WriteUint32(c.inode)
+}
+
 const (
 	inodeBasicDir     = 1
 	inodeBasicFile    = 2
