@@ -385,6 +385,29 @@ func (b blockStat) Sys() any {
 	return b
 }
 
+func (b blockStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if b.xattrIndex != fieldDisabled {
+		b.writeExtTo(lew)
+	} else {
+		b.writeBasicTo(lew)
+	}
+}
+
+func (b blockStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtBlock)
+	b.commonStat.writeTo(lew)
+	lew.WriteUint32(b.linkCount)
+	lew.WriteUint32(b.deviceNumber)
+	lew.WriteUint32(b.xattrIndex)
+}
+
+func (b blockStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicBlock)
+	b.commonStat.writeTo(lew)
+	lew.WriteUint32(b.linkCount)
+	lew.WriteUint32(b.deviceNumber)
+}
+
 type charStat blockStat
 
 func (c charStat) Mode() fs.FileMode {
