@@ -418,6 +418,29 @@ func (c charStat) Sys() any {
 	return c
 }
 
+func (c charStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if c.xattrIndex != fieldDisabled {
+		c.writeExtTo(lew)
+	} else {
+		c.writeBasicTo(lew)
+	}
+}
+
+func (c charStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtChar)
+	c.commonStat.writeTo(lew)
+	lew.WriteUint32(c.linkCount)
+	lew.WriteUint32(c.deviceNumber)
+	lew.WriteUint32(c.xattrIndex)
+}
+
+func (c charStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicChar)
+	c.commonStat.writeTo(lew)
+	lew.WriteUint32(c.linkCount)
+	lew.WriteUint32(c.deviceNumber)
+}
+
 type fifoStat struct {
 	commonStat
 	linkCount  uint32
