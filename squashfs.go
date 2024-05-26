@@ -117,6 +117,9 @@ type FS interface {
 	// Lstat returns a FileInfo describing the named file. If the file is a
 	// symbolic link, the returned FileInfo describes the symbolic link.
 	LStat(name string) (fs.FileInfo, error)
+
+	// Readlink returns the destination of the named symbolic link.
+	Readlink(name string) (string, error)
 }
 
 // Open reads the passed io.ReaderAt as a SquashFS image, returning a fs.FS
@@ -167,4 +170,26 @@ func (s *squashfs) LStat(path string) (fs.FileInfo, error) {
 	}
 
 	return fi, nil
+}
+
+func (s *squashfs) Readlink(path string) (string, error) {
+	fi, err := s.resolve(path, false)
+	if err != nil {
+		return "", &fs.PathError{
+			Op:   "readlink",
+			Path: path,
+			Err:  err,
+		}
+	}
+
+	sym, ok := fi.(symlinkStat)
+	if !ok {
+		return "", &fs.PathError{
+			Op:   "readlink",
+			Path: path,
+			Err:  fs.ErrInvalid,
+		}
+	}
+
+	return sym.targetPath, nil
 }
