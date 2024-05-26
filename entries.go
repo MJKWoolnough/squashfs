@@ -73,6 +73,13 @@ type dirIndex struct {
 	name  string
 }
 
+func (d dirIndex) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint32(d.index)
+	lew.WriteUint32(d.start)
+	lew.WriteUint32(uint32(len(d.name) - 1))
+	lew.WriteString(d.name)
+}
+
 type dirStat struct {
 	commonStat
 	blockIndex  uint32
@@ -140,6 +147,40 @@ func (d dirStat) Type() fs.FileMode {
 
 func (d dirStat) Info() (fs.FileInfo, error) {
 	return d, nil
+}
+
+func (d dirStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if d.xattrIndex != fieldDisabled || len(d.index) > 0 || d.fileSize > 0xffff {
+		d.writeExtTo(lew)
+	} else {
+		d.writeBasicTo(lew)
+	}
+}
+
+func (d dirStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtDir)
+	d.commonStat.writeTo(lew)
+	lew.WriteUint32(d.linkCount)
+	lew.WriteUint32(d.fileSize)
+	lew.WriteUint32(d.blockIndex)
+	lew.WriteUint32(d.parentInode)
+	lew.WriteUint16(uint16(len(d.index)))
+	lew.WriteUint16(d.blockOffset)
+	lew.WriteUint32(d.xattrIndex)
+
+	for _, e := range d.index {
+		e.writeTo(lew)
+	}
+}
+
+func (d dirStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicDir)
+	d.commonStat.writeTo(lew)
+	lew.WriteUint32(d.blockIndex)
+	lew.WriteUint32(d.linkCount)
+	lew.WriteUint16(uint16(d.fileSize))
+	lew.WriteUint16(d.blockOffset)
+	lew.WriteUint32(d.parentInode)
 }
 
 type fileStat struct {
