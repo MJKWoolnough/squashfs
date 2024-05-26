@@ -15,6 +15,7 @@ type commonStat struct {
 	uid   uint32
 	gid   uint32
 	mtime time.Time
+	inode uint32
 }
 
 func (c commonStat) Name() string {
@@ -378,9 +379,8 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 		uid:   s.getID(&ler),
 		gid:   s.getID(&ler),
 		mtime: time.Unix(int64(ler.ReadUint32()), 0),
+		inode: ler.ReadUint32(),
 	}
-
-	ler.ReadUint32() // inode number?
 
 	fi := s.readEntry(&ler, typ, common)
 
