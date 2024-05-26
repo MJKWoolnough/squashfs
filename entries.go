@@ -307,7 +307,7 @@ func readBasicSymlink(ler *byteio.StickyLittleEndianReader, common commonStat) s
 	return symlinkStat{
 		commonStat: common,
 		linkCount:  ler.ReadUint32(),
-		targetPath: ler.ReadString(int(ler.ReadUint32())),
+		targetPath: ler.ReadString32(),
 		xattrIndex: fieldDisabled,
 	}
 }
@@ -316,7 +316,7 @@ func readExtSymlink(ler *byteio.StickyLittleEndianReader, common commonStat) sym
 	return symlinkStat{
 		commonStat: common,
 		linkCount:  ler.ReadUint32(),
-		targetPath: ler.ReadString(int(ler.ReadUint32())),
+		targetPath: ler.ReadString32(),
 		xattrIndex: ler.ReadUint32(),
 	}
 }
