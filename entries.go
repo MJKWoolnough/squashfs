@@ -259,6 +259,43 @@ func (f fileStat) Info() (fs.FileInfo, error) {
 	return f, nil
 }
 
+func (f fileStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if f.blocksStart > 0xffffffff || f.fileSize > 0xffffffff || f.linkCount > 0 || f.xattrIndex != fieldDisabled || f.sparse > 0 {
+		f.writeExtTo(lew)
+	} else {
+		f.writeBasicTo(lew)
+	}
+}
+
+func (f fileStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtFile)
+	f.commonStat.writeTo(lew)
+	lew.WriteUint64(f.blocksStart)
+	lew.WriteUint64(f.fileSize)
+	lew.WriteUint64(f.sparse)
+	lew.WriteUint32(f.linkCount)
+	lew.WriteUint32(f.fragIndex)
+	lew.WriteUint32(f.blockOffset)
+	lew.WriteUint32(f.xattrIndex)
+	f.writeBlocks(lew)
+}
+
+func (f fileStat) writeBlocks(lew *byteio.StickyLittleEndianWriter) {
+	for _, b := range f.blockSizes {
+		lew.WriteUint32(b)
+	}
+}
+
+func (f fileStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicFile)
+	f.commonStat.writeTo(lew)
+	lew.WriteUint32(uint32(f.blocksStart))
+	lew.WriteUint32(f.fragIndex)
+	lew.WriteUint32(f.blockOffset)
+	lew.WriteUint32(uint32(f.fileSize))
+	f.writeBlocks(lew)
+}
+
 type symlinkStat struct {
 	commonStat
 	linkCount  uint32
