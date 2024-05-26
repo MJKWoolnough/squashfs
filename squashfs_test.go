@@ -251,6 +251,11 @@ func TestSeek(t *testing.T) {
 }
 
 func TestStat(t *testing.T) {
+	const (
+		symD = "../dirC/fileB"
+		symE = "/dirC/fileB"
+	)
+
 	test(
 		t,
 		false,
@@ -385,6 +390,30 @@ func TestStat(t *testing.T) {
 
 				return nil
 			},
+			func(sfs FS) error {
+				sym, err := sfs.Readlink("dirD/fileD")
+				if err != nil {
+					return fmt.Errorf("unexpected error readlink'ing file: %w", err)
+				}
+
+				if sym != symD {
+					return fmt.Errorf("expecting symlink dest %q, got %q", symD, sym)
+				}
+
+				return nil
+			},
+			func(sfs FS) error {
+				sym, err := sfs.Readlink("dirD/fileE")
+				if err != nil {
+					return fmt.Errorf("unexpected error readlink'ing file: %w", err)
+				}
+
+				if sym != symE {
+					return fmt.Errorf("expecting symlink dest %q, got %q", symE, sym)
+				}
+
+				return nil
+			},
 		},
 		dirData("dirA", []child{}, chmod(0o555)),
 		dirData("dirB", []child{
@@ -395,8 +424,8 @@ func TestStat(t *testing.T) {
 			symlink("fileC", "fileB", chmod(0o321)),
 		}),
 		dirData("dirD", []child{
-			symlink("fileD", "../dirC/fileB", chmod(0o231)),
-			symlink("fileE", "/dirC/fileB", chmod(0o132)),
+			symlink("fileD", symD, chmod(0o231)),
+			symlink("fileE", symE, chmod(0o132)),
 		}),
 		symlink("dirE", "dirC"),
 	)
