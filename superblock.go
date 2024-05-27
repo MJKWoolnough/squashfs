@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	headerLength = 104
-	magic        = 0x73717368 // hsqs
-	versionMajor = 4
-	versionMinor = 0
+	headerLength           = 104
+	magic                  = 0x73717368 // hsqs
+	versionMajor           = 4
+	versionMinor           = 0
+	flagCompressionOptions = 0x400
 )
 
 type superblock struct {
@@ -48,7 +49,7 @@ func (s *superblock) readFrom(r io.Reader) error {
 		return err
 	}
 
-	s.CompressionOptions, err = s.Compressor.parseOptions(s.Flags&0x400 != 0, &ler)
+	s.CompressionOptions, err = s.Compressor.parseOptions(s.Flags&flagCompressionOptions != 0, &ler)
 
 	return err
 }
