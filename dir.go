@@ -12,7 +12,7 @@ type dir struct {
 	dir dirStat
 
 	mu       sync.Mutex
-	squashfs *squashfs
+	squashfs *SquashFS
 	reader   io.Reader
 	count    uint32
 	start    uint32
@@ -26,7 +26,7 @@ const (
 	dirBodySize        = 8
 )
 
-func (s *squashfs) newDir(dirStat dirStat) (*dir, error) {
+func (s *SquashFS) newDir(dirStat dirStat) (*dir, error) {
 	ptr := uint64(dirStat.blockIndex)<<metadataPointerShift | uint64(dirStat.blockOffset)
 
 	r, err := s.readMetadata(ptr, s.superblock.DirTable)
@@ -130,7 +130,7 @@ func (d *dir) Close() error {
 }
 
 type dirEntry struct {
-	squashfs *squashfs
+	squashfs *SquashFS
 	typ      uint16
 	name     string
 	ptr      uint64

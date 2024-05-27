@@ -481,7 +481,7 @@ func (s socketStat) Sys() any {
 	return s
 }
 
-func (s *squashfs) readEntry(ler *byteio.StickyLittleEndianReader, typ uint16, common commonStat) fs.FileInfo {
+func (s *SquashFS) readEntry(ler *byteio.StickyLittleEndianReader, typ uint16, common commonStat) fs.FileInfo {
 	switch typ {
 	case inodeBasicDir:
 		return readBasicDir(ler, common)
@@ -518,7 +518,7 @@ func (s *squashfs) readEntry(ler *byteio.StickyLittleEndianReader, typ uint16, c
 	}
 }
 
-func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
+func (s *SquashFS) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	r, err := s.readMetadata(inode, s.superblock.InodeTable)
 	if err != nil {
 		return nil, err
@@ -546,7 +546,7 @@ func (s *squashfs) getEntry(inode uint64, name string) (fs.FileInfo, error) {
 	return fi, nil
 }
 
-func (s *squashfs) getID(ler *byteio.StickyLittleEndianReader) uint32 {
+func (s *SquashFS) getID(ler *byteio.StickyLittleEndianReader) uint32 {
 	id := ler.ReadUint16()
 	if id >= s.superblock.IDCount {
 		ler.Err = fs.ErrInvalid
@@ -567,7 +567,7 @@ func (s *squashfs) getID(ler *byteio.StickyLittleEndianReader) uint32 {
 	return pid
 }
 
-func (s *squashfs) getDirEntry(name string, index uint32, offset uint16, totalSize uint32) (fs.FileInfo, error) {
+func (s *SquashFS) getDirEntry(name string, index uint32, offset uint16, totalSize uint32) (fs.FileInfo, error) {
 	r, err := s.readMetadata(uint64(index)<<metadataPointerShift|uint64(offset), s.superblock.DirTable)
 	if err != nil {
 		return nil, err

@@ -10,14 +10,14 @@ import (
 
 const defaultCacheSize = 1024
 
-type squashfs struct {
+type SquashFS struct {
 	superblock superblock
 	reader     io.ReaderAt
 
 	blockCache blockCache
 }
 
-func (s *squashfs) Open(path string) (fs.File, error) {
+func (s *SquashFS) Open(path string) (fs.File, error) {
 	f, err := s.open(path)
 	if err != nil {
 		return nil, &fs.PathError{
@@ -30,7 +30,7 @@ func (s *squashfs) Open(path string) (fs.File, error) {
 	return f, nil
 }
 
-func (s *squashfs) open(path string) (fs.File, error) {
+func (s *SquashFS) open(path string) (fs.File, error) {
 	f, err := s.resolve(path, true)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (s *squashfs) open(path string) (fs.File, error) {
 	return nil, fs.ErrInvalid
 }
 
-func (s *squashfs) ReadFile(name string) ([]byte, error) {
+func (s *SquashFS) ReadFile(name string) ([]byte, error) {
 	d, err := s.readFile(name)
 	if err != nil {
 		return nil, &fs.PathError{
@@ -62,7 +62,7 @@ func (s *squashfs) ReadFile(name string) ([]byte, error) {
 	return d, nil
 }
 
-func (s *squashfs) readFile(name string) ([]byte, error) {
+func (s *SquashFS) readFile(name string) ([]byte, error) {
 	f, err := s.Open(name)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *squashfs) readFile(name string) ([]byte, error) {
 	return buf, nil
 }
 
-func (s *squashfs) ReadDir(name string) ([]fs.DirEntry, error) {
+func (s *SquashFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	de, err := s.readDir(name)
 	if err != nil {
 		return nil, &fs.PathError{
@@ -95,7 +95,7 @@ func (s *squashfs) ReadDir(name string) ([]fs.DirEntry, error) {
 	return de, nil
 }
 
-func (s *squashfs) readDir(name string) ([]fs.DirEntry, error) {
+func (s *SquashFS) readDir(name string) ([]fs.DirEntry, error) {
 	d, err := s.open(name)
 	if err != nil {
 		return nil, err
@@ -109,44 +109,31 @@ func (s *squashfs) readDir(name string) ([]fs.DirEntry, error) {
 	return dd.ReadDir(-1)
 }
 
-type FS interface {
-	fs.ReadFileFS
-	fs.ReadDirFS
-	fs.StatFS
-
-	// Lstat returns a FileInfo describing the named file. If the file is a
-	// symbolic link, the returned FileInfo describes the symbolic link.
-	LStat(name string) (fs.FileInfo, error)
-
-	// Readlink returns the destination of the named symbolic link.
-	Readlink(name string) (string, error)
-}
-
 // Open reads the passed io.ReaderAt as a SquashFS image, returning a fs.FS
 // implementation.
 //
 // The returned fs.FS, and any files opened from it will cease to work if the
 // io.ReaderAt is closed.
-func Open(r io.ReaderAt) (FS, error) {
+func Open(r io.ReaderAt) (*SquashFS, error) {
 	return OpenWithCacheSize(r, defaultCacheSize)
 }
 
 // OpenWithCacheSize acts like Open, but allows a custom cache size, which
 // normally defaults to 1024.
-func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (FS, error) {
+func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (*SquashFS, error) {
 	var sb superblock
 	if err := sb.readFrom(io.NewSectionReader(r, 0, headerLength)); err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
 	}
 
-	return &squashfs{
+	return &SquashFS{
 		superblock: sb,
 		reader:     r,
 		blockCache: newBlockCache(cacheSize),
 	}, nil
 }
 
-func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
+func (s *SquashFS) Stat(path string) (fs.FileInfo, error) {
 	fi, err := s.resolve(path, true)
 	if err != nil {
 		return nil, &fs.PathError{
@@ -159,7 +146,7 @@ func (s *squashfs) Stat(path string) (fs.FileInfo, error) {
 	return fi, nil
 }
 
-func (s *squashfs) LStat(path string) (fs.FileInfo, error) {
+func (s *SquashFS) LStat(path string) (fs.FileInfo, error) {
 	fi, err := s.resolve(path, false)
 	if err != nil {
 		return nil, &fs.PathError{
@@ -172,7 +159,7 @@ func (s *squashfs) LStat(path string) (fs.FileInfo, error) {
 	return fi, nil
 }
 
-func (s *squashfs) Readlink(path string) (string, error) {
+func (s *SquashFS) Readlink(path string) (string, error) {
 	fi, err := s.resolve(path, false)
 	if err != nil {
 		return "", &fs.PathError{

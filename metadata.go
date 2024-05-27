@@ -18,7 +18,7 @@ const (
 	metadataBlockCompressedMask = 0x8000
 )
 
-func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
+func (s *SquashFS) readMetadata(pointer, table uint64) (*blockReader, error) {
 	onDisk := int64(table + (pointer >> metadataPointerShift))
 
 	pos := int64(pointer & metadataPointerMask)
@@ -27,7 +27,7 @@ func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
 	}
 
 	b := &blockReader{
-		squashfs: s,
+		SquashFS: s,
 		next:     onDisk,
 	}
 
@@ -39,7 +39,7 @@ func (s *squashfs) readMetadata(pointer, table uint64) (*blockReader, error) {
 }
 
 type blockReader struct {
-	*squashfs
+	*SquashFS
 	r    io.ReadSeeker
 	next int64
 }

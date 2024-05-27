@@ -13,7 +13,7 @@ type file struct {
 	file fileStat
 
 	mu       sync.Mutex
-	squashfs *squashfs
+	squashfs *SquashFS
 	reader   io.ReadSeeker
 	pos      int64
 }

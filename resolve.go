@@ -7,13 +7,13 @@ import (
 )
 
 type resolver struct {
-	*squashfs
+	*SquashFS
 	fullPath, path     string
 	cutAt              int
 	redirectsRemaining int
 }
 
-func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) {
+func (s *SquashFS) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) {
 	if !fs.ValidPath(fpath) {
 		return nil, fs.ErrInvalid
 	}
@@ -26,7 +26,7 @@ func (s *squashfs) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) 
 	const maximumRedirects = 1024
 
 	r := resolver{
-		squashfs:           s,
+		SquashFS:           s,
 		fullPath:           fpath,
 		path:               fpath,
 		redirectsRemaining: maximumRedirects,
