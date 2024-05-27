@@ -10,6 +10,13 @@ import (
 
 const defaultCacheSize = 1 << 24 // 16MB
 
+// The SquashFS type implements many of the FS interfaces, such as:
+// fs.FS
+// fs.ReadFileFS
+// fs.ReadDirFS
+// fs.StatFS
+//
+// and has additional methods for dealing with symlinks.
 type SquashFS struct {
 	superblock superblock
 	reader     io.ReaderAt
