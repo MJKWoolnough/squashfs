@@ -15,11 +15,13 @@ type cachedBlock struct {
 type blockCache struct {
 	mu    sync.RWMutex
 	cache []cachedBlock
+	total int
 }
 
-func newBlockCache(length uint) blockCache {
+func newBlockCache(length int) blockCache {
 	return blockCache{
-		cache: make([]cachedBlock, 0, length),
+		cache: make([]cachedBlock, 0),
+		total: length,
 	}
 }
 
@@ -53,14 +55,8 @@ func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]
 		return cb, nil
 	}
 
-	if len(b.cache) == cap(b.cache) {
-		b.cache = b.cache[:len(b.cache)-1]
-	}
-
-	b.cache = slices.Insert(b.cache, 0, cachedBlock{
-		ptr:  ptr,
-		data: data,
-	})
+	b.clearSpace(len(data))
+	b.addData(ptr, data)
 
 	return data, nil
 }
@@ -77,6 +73,30 @@ func (b *blockCache) getExistingBlock(ptr int64) []byte {
 	}
 
 	return nil
+}
+
+func (b *blockCache) clearSpace(l int) {
+	clearFrom := len(b.cache)
+
+	for clearFrom > 0 && b.total < l {
+		clearFrom--
+		b.total += len(b.cache[clearFrom].data)
+	}
+
+	b.cache = slices.Delete(b.cache, clearFrom, len(b.cache))
+}
+
+func (b *blockCache) addData(ptr int64, data []byte) {
+	if b.total < len(data) {
+		return
+	}
+
+	b.cache = slices.Insert(b.cache, 0, cachedBlock{
+		ptr:  ptr,
+		data: data,
+	})
+
+	b.total += len(data)
 }
 
 func decompressBlock(r io.Reader, c Compressor) ([]byte, error) {
