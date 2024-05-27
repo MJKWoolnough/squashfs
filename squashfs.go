@@ -17,6 +17,7 @@ type SquashFS struct {
 	blockCache blockCache
 }
 
+// Open opens the named file for reading.
 func (s *SquashFS) Open(path string) (fs.File, error) {
 	f, err := s.open(path)
 	if err != nil {
@@ -49,6 +50,7 @@ func (s *SquashFS) open(path string) (fs.File, error) {
 	return nil, fs.ErrInvalid
 }
 
+// ReadFile return the byte contents of the named file.
 func (s *SquashFS) ReadFile(name string) ([]byte, error) {
 	d, err := s.readFile(name)
 	if err != nil {
@@ -82,6 +84,7 @@ func (s *SquashFS) readFile(name string) ([]byte, error) {
 	return buf, nil
 }
 
+// ReadDir returns a sorted list of directory entries for the named directory.
 func (s *SquashFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	de, err := s.readDir(name)
 	if err != nil {
@@ -133,6 +136,7 @@ func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (*SquashFS, error) {
 	}, nil
 }
 
+// Stat returns a FileInfo describing the name file.
 func (s *SquashFS) Stat(path string) (fs.FileInfo, error) {
 	fi, err := s.resolve(path, true)
 	if err != nil {
@@ -146,6 +150,8 @@ func (s *SquashFS) Stat(path string) (fs.FileInfo, error) {
 	return fi, nil
 }
 
+// Lstat returns a FileInfo describing the named file. If the file is a
+// symbolic link, the returned FileInfo describes the symbolic link.
 func (s *SquashFS) LStat(path string) (fs.FileInfo, error) {
 	fi, err := s.resolve(path, false)
 	if err != nil {
@@ -159,6 +165,7 @@ func (s *SquashFS) LStat(path string) (fs.FileInfo, error) {
 	return fi, nil
 }
 
+// Readlink returns the destination of the named symbolic link.
 func (s *SquashFS) Readlink(path string) (string, error) {
 	fi, err := s.resolve(path, false)
 	if err != nil {
