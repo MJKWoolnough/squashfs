@@ -502,6 +502,27 @@ func (s socketStat) Sys() any {
 	return s
 }
 
+func (s socketStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if s.xattrIndex != fieldDisabled {
+		s.writeExtTo(lew)
+	} else {
+		s.writeBasicTo(lew)
+	}
+}
+
+func (s socketStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtSock)
+	s.commonStat.writeTo(lew)
+	lew.WriteUint32(s.linkCount)
+	lew.WriteUint32(s.xattrIndex)
+}
+
+func (s socketStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicSock)
+	s.commonStat.writeTo(lew)
+	lew.WriteUint32(s.linkCount)
+}
+
 func (s *SquashFS) readEntry(ler *byteio.StickyLittleEndianReader, typ uint16, common commonStat) fs.FileInfo {
 	switch typ {
 	case inodeBasicDir:
