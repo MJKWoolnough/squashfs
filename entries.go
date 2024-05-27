@@ -471,6 +471,27 @@ func (f fifoStat) Sys() any {
 	return f
 }
 
+func (f fifoStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
+	if f.xattrIndex != fieldDisabled {
+		f.writeExtTo(lew)
+	} else {
+		f.writeBasicTo(lew)
+	}
+}
+
+func (f fifoStat) writeExtTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeExtPipe)
+	f.commonStat.writeTo(lew)
+	lew.WriteUint32(f.linkCount)
+	lew.WriteUint32(f.xattrIndex)
+}
+
+func (f fifoStat) writeBasicTo(lew *byteio.StickyLittleEndianWriter) {
+	lew.WriteUint16(inodeBasicPipe)
+	f.commonStat.writeTo(lew)
+	lew.WriteUint32(f.linkCount)
+}
+
 type socketStat fifoStat
 
 func (s socketStat) Mode() fs.FileMode {
