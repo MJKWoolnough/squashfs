@@ -8,7 +8,7 @@ import (
 	"io/fs"
 )
 
-const defaultCacheSize = 1024
+const defaultCacheSize = 1 << 24 // 16MB
 
 type SquashFS struct {
 	superblock superblock
@@ -122,8 +122,8 @@ func Open(r io.ReaderAt) (*SquashFS, error) {
 }
 
 // OpenWithCacheSize acts like Open, but allows a custom cache size, which
-// normally defaults to 1024.
-func OpenWithCacheSize(r io.ReaderAt, cacheSize uint) (*SquashFS, error) {
+// normally defaults to 16MB.
+func OpenWithCacheSize(r io.ReaderAt, cacheSize int) (*SquashFS, error) {
 	var sb superblock
 	if err := sb.readFrom(io.NewSectionReader(r, 0, headerLength)); err != nil {
 		return nil, fmt.Errorf("error reading superblock: %w", err)
