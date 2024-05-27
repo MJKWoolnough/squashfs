@@ -7,6 +7,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"vimagination.zapto.org/byteio"
@@ -22,6 +23,7 @@ type Builder struct {
 	defaultGroup   uint32
 	defaultModTime time.Time
 
+	mu   sync.Mutex
 	root *node
 }
 
@@ -61,6 +63,9 @@ func (b *Builder) nodeModTime() time.Time {
 }
 
 func (b *Builder) Dir(p string, options ...InodeOption) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	n, err := b.addNode(p, options...)
 	if err != nil {
 		return err
@@ -104,6 +109,9 @@ func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
 }
 
 func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	_, err := b.addNode(p, options...)
 	if err != nil {
 		return err
@@ -113,6 +121,9 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 }
 
 func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	n, err := b.addNode(p, options...)
 	if err != nil {
 		return err
