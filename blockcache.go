@@ -96,7 +96,7 @@ func (b *blockCache) addData(ptr int64, data []byte) {
 		data: data,
 	})
 
-	b.total += len(data)
+	b.total -= len(data)
 }
 
 func decompressBlock(r io.Reader, c Compressor) ([]byte, error) {
