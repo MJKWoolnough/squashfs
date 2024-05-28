@@ -85,7 +85,7 @@ func (r *resolver) handleSymlink(sym symlinkStat) error {
 	if strings.HasPrefix(sym.targetPath, "/") {
 		r.fullPath = path.Clean(sym.targetPath)[1:]
 	} else if r.path == "" {
-		r.fullPath = path.Join(r.fullPath[:r.cutAt], sym.targetPath, r.path)
+		r.fullPath = path.Join(r.fullPath[:r.cutAt], sym.targetPath)
 	} else {
 		r.fullPath = path.Join(r.fullPath[:r.cutAt-len(sym.name)-1], sym.targetPath, r.path)
 	}
