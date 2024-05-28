@@ -491,6 +491,6 @@ func TestReadDir(t *testing.T) {
 			dirData("childA", []child{}),
 			fileData("childB", ""),
 			symlink("childC", "childB"),
-		}, chmod(0o321)),
+		}, chmod(0o432)),
 	)
 }
