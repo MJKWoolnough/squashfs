@@ -38,10 +38,6 @@ func (c commonStat) IsDir() bool {
 	return false
 }
 
-func (c commonStat) Type() fs.FileMode {
-	return c.Mode().Type()
-}
-
 func (c commonStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
 	lew.WriteUint16(c.perms)
 	lew.WriteUint16(uint16(c.uid))
