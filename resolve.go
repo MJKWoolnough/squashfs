@@ -51,7 +51,7 @@ func (r *resolver) resolve(root fs.FileInfo, resolveLast bool) (curr fs.FileInfo
 			break
 		} else if sym, ok := curr.(symlinkStat); !ok {
 			continue
-		} else if err := r.handleSymlink(sym); err != nil {
+		} else if err = r.handleSymlink(sym); err != nil {
 			return nil, err
 		}
 
