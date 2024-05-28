@@ -13,15 +13,15 @@ type cachedBlock struct {
 }
 
 type blockCache struct {
-	mu    sync.RWMutex
-	cache []cachedBlock
-	total int
+	mu             sync.RWMutex
+	cache          []cachedBlock
+	bytesRemaining int
 }
 
 func newBlockCache(length int) blockCache {
 	return blockCache{
-		cache: make([]cachedBlock, 0),
-		total: length,
+		cache:          make([]cachedBlock, 0),
+		bytesRemaining: length,
 	}
 }
 
@@ -78,16 +78,16 @@ func (b *blockCache) getExistingBlock(ptr int64) []byte {
 func (b *blockCache) clearSpace(l int) {
 	clearFrom := len(b.cache)
 
-	for clearFrom > 0 && b.total < l {
+	for clearFrom > 0 && b.bytesRemaining < l {
 		clearFrom--
-		b.total += len(b.cache[clearFrom].data)
+		b.bytesRemaining += len(b.cache[clearFrom].data)
 	}
 
 	b.cache = slices.Delete(b.cache, clearFrom, len(b.cache))
 }
 
 func (b *blockCache) addData(ptr int64, data []byte) {
-	if b.total < len(data) {
+	if b.bytesRemaining < len(data) {
 		return
 	}
 
@@ -96,7 +96,7 @@ func (b *blockCache) addData(ptr int64, data []byte) {
 		data: data,
 	})
 
-	b.total -= len(data)
+	b.bytesRemaining -= len(data)
 }
 
 func decompressBlock(r io.Reader, c Compressor) ([]byte, error) {
