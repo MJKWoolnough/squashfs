@@ -30,7 +30,7 @@ const (
 	maxDictionarySize = 8192
 )
 
-type Compressor uint8
+type Compressor uint16
 
 func (c Compressor) String() string {
 	switch c {
@@ -78,31 +78,31 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 	case CompressorGZIP:
 		if hasOptionsFlag {
 			return parseGZipOptions(ler)
-		} else {
-			return DefaultGzipOptions(), nil
 		}
+
+		return DefaultGzipOptions(), nil
 	case CompressorLZMA:
 		return nil, ErrNoCompressorOptions
 	case CompressorLZO:
 		if hasOptionsFlag {
 			return parseLZOOptions(ler)
-		} else {
-			return DefaultLZOOptions(), nil
 		}
+
+		return DefaultLZOOptions(), nil
 	case CompressorXZ:
 		if hasOptionsFlag {
 			return parseXZOptions(ler)
-		} else {
-			return DefaultXZOptions(), nil
 		}
+
+		return DefaultXZOptions(), nil
 	case CompressorLZ4:
 		return parseLZ4Options(ler)
 	case CompressorZSTD:
 		if hasOptionsFlag {
 			return parseZStdOptions(ler)
-		} else {
-			return DefaultZStdOptions(), nil
 		}
+
+		return DefaultZStdOptions(), nil
 	}
 
 	return nil, ErrInvalidCompressor
