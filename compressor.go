@@ -30,7 +30,7 @@ const (
 	maxDictionarySize = 8192
 )
 
-type Compressor uint16
+type Compressor uint8
 
 func (c Compressor) String() string {
 	switch c {
