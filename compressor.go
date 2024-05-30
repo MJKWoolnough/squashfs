@@ -82,7 +82,11 @@ func (c Compressor) parseOptions(hasOptionsFlag bool, ler *byteio.StickyLittleEn
 
 		return DefaultGzipOptions(), nil
 	case CompressorLZMA:
-		return nil, ErrNoCompressorOptions
+		if hasOptionsFlag {
+			return nil, ErrNoCompressorOptions
+		}
+
+		return DefaultLZMAOptions(), nil
 	case CompressorLZO:
 		if hasOptionsFlag {
 			return parseLZOOptions(ler)
