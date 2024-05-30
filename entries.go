@@ -61,6 +61,8 @@ const (
 	inodeExtChar      = 12
 	inodeExtPipe      = 13
 	inodeExtSock      = 14
+
+	fieldDisabled = 0xffffffff
 )
 
 type dirIndex struct {
@@ -190,8 +192,6 @@ type fileStat struct {
 	xattrIndex  uint32
 	blockSizes  []uint32
 }
-
-const fieldDisabled = 0xFFFFFFFF
 
 func (f *fileStat) readBlocks(ler *byteio.StickyLittleEndianReader, blockSize uint32) {
 	var blockCount uint64
