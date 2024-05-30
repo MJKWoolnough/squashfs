@@ -13,7 +13,7 @@ type cachedBlock struct {
 }
 
 type blockCache struct {
-	mu             sync.RWMutex
+	mu             sync.Mutex
 	cache          []cachedBlock
 	bytesRemaining int
 }
@@ -35,9 +35,9 @@ func (b *blockCache) getBlock(ptr int64, r io.ReadSeeker, c Compressor) (*bytes.
 }
 
 func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]byte, error) {
-	b.mu.RLock()
+	b.mu.Lock()
 	cb := b.getExistingBlock(ptr)
-	b.mu.RUnlock()
+	b.mu.Unlock()
 
 	if cb != nil {
 		return cb, nil
