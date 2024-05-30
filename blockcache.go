@@ -3,24 +3,23 @@ package squashfs
 import (
 	"bytes"
 	"io"
-	"slices"
 	"sync"
 )
 
 type cachedBlock struct {
 	ptr  int64
 	data []byte
+	next *cachedBlock
 }
 
 type blockCache struct {
 	mu             sync.Mutex
-	cache          []cachedBlock
+	head, tail     *cachedBlock
 	bytesRemaining int
 }
 
 func newBlockCache(length int) blockCache {
 	return blockCache{
-		cache:          make([]cachedBlock, 0),
 		bytesRemaining: length,
 	}
 }
@@ -62,28 +61,34 @@ func (b *blockCache) getOrSetBlock(ptr int64, r io.ReadSeeker, c Compressor) ([]
 }
 
 func (b *blockCache) getExistingBlock(ptr int64) []byte {
-	for n, cb := range b.cache {
-		if cb.ptr == ptr {
-			if n != 0 {
-				b.cache = slices.Insert(slices.Delete(b.cache, n, n+1), 0, cb)
-			}
+	for node := &b.head; *node != nil; {
+		curr := *node
 
-			return cb.data
+		if curr.ptr != ptr {
+			node = &curr.next
+
+			continue
 		}
+
+		if curr != b.tail {
+			*node = curr.next
+			b.tail.next = curr
+			b.tail = curr
+			curr.next = nil
+		}
+
+		return curr.data
 	}
 
 	return nil
 }
 
 func (b *blockCache) clearSpace(l int) {
-	clearFrom := len(b.cache)
+	for node := b.head; node != nil && b.bytesRemaining < l; node = node.next {
+		b.bytesRemaining += len(node.data)
 
-	for clearFrom > 0 && b.bytesRemaining < l {
-		clearFrom--
-		b.bytesRemaining += len(b.cache[clearFrom].data)
+		b.head = node.next
 	}
-
-	b.cache = slices.Delete(b.cache, clearFrom, len(b.cache))
 }
 
 func (b *blockCache) addData(ptr int64, data []byte) {
@@ -91,11 +96,18 @@ func (b *blockCache) addData(ptr int64, data []byte) {
 		return
 	}
 
-	b.cache = slices.Insert(b.cache, 0, cachedBlock{
+	node := &cachedBlock{
 		ptr:  ptr,
 		data: data,
-	})
+	}
 
+	if b.head == nil {
+		b.head = node
+	} else {
+		b.tail.next = node
+	}
+
+	b.tail = node
 	b.bytesRemaining -= len(data)
 }
 
