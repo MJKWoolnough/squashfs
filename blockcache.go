@@ -6,6 +6,12 @@ import (
 	"sync"
 )
 
+var cbPool = sync.Pool{
+	New: func() any {
+		return &cachedBlock{}
+	},
+}
+
 type cachedBlock struct {
 	ptr  int64
 	data []byte
@@ -88,6 +94,11 @@ func (b *blockCache) clearSpace(l int) {
 		b.bytesRemaining += len(node.data)
 
 		b.head = node.next
+
+		node.data = nil
+		node.next = nil
+
+		cbPool.Put(node)
 	}
 }
 
@@ -96,10 +107,9 @@ func (b *blockCache) addData(ptr int64, data []byte) {
 		return
 	}
 
-	node := &cachedBlock{
-		ptr:  ptr,
-		data: data,
-	}
+	node := cbPool.Get().(*cachedBlock)
+	node.ptr = ptr
+	node.data = data
 
 	if b.head == nil {
 		b.head = node
