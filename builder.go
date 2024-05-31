@@ -24,12 +24,9 @@ type Builder struct {
 	defaultModTime time.Time
 
 	blockWriter   blockWriter
-	inodeData     memio.Buffer
-	inodeTable    blockWriter
-	fragmentData  memio.Buffer
-	fragmentTable blockWriter
-	idData        memio.Buffer
-	idTable       blockWriter
+	inodeTable    metadataWriter
+	fragmentTable metadataWriter
+	idTable       metadataWriter
 
 	mu   sync.Mutex
 	root *dirNode
@@ -65,12 +62,12 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		return nil, err
 	}
 
-	for table, data := range map[*blockWriter]*memio.Buffer{
-		&b.inodeTable:    &b.inodeData,
-		&b.fragmentTable: &b.fragmentData,
-		&b.idTable:       &b.idData,
+	for _, table := range [...]*metadataWriter{
+		&b.inodeTable,
+		&b.fragmentTable,
+		&b.idTable,
 	} {
-		if *table, err = newMetadataWriter(data, 0, b.superblock.CompressionOptions); err != nil {
+		if *table, err = newMetadataWriter(b.superblock.CompressionOptions); err != nil {
 			return nil, err
 		}
 	}
@@ -251,20 +248,6 @@ func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor Com
 	}, nil
 }
 
-func newMetadataWriter(w io.WriterAt, start int64, compressor CompressorOptions) (blockWriter, error) {
-	c, err := compressor.getCompressedWriter()
-	if err != nil {
-		return blockWriter{}, err
-	}
-
-	return blockWriter{
-		w:            io.NewOffsetWriter(w, start),
-		uncompressed: make(memio.LimitedBuffer, 0, blockSize),
-		compressed:   make(memio.LimitedBuffer, 0, blockSize),
-		compressor:   c,
-	}, nil
-}
-
 func (b *blockWriter) Pos() int64 {
 	pos, _ := b.w.Seek(0, io.SeekCurrent)
 
@@ -304,17 +287,37 @@ func (b *blockWriter) compressedOrUncompressed() memio.LimitedBuffer {
 	return b.uncompressed
 }
 
-func (b *blockWriter) WriteMetadata(data []byte) error {
+type metadataWriter struct {
+	buf          memio.Buffer
+	uncompressed memio.LimitedBuffer
+	compressed   memio.LimitedBuffer
+	compressor   compressedWriter
+}
+
+func newMetadataWriter(compressor CompressorOptions) (metadataWriter, error) {
+	c, err := compressor.getCompressedWriter()
+	if err != nil {
+		return metadataWriter{}, err
+	}
+
+	return metadataWriter{
+		uncompressed: make(memio.LimitedBuffer, 0, blockSize),
+		compressed:   make(memio.LimitedBuffer, 0, blockSize),
+		compressor:   c,
+	}, nil
+}
+
+func (m *metadataWriter) Write(data []byte) error {
 	for len(data) > 0 {
-		n, _ := b.uncompressed.Write(data)
+		n, _ := m.uncompressed.Write(data)
 
 		data = data[n:]
 
-		if len(b.uncompressed) != cap(b.uncompressed) {
+		if len(m.uncompressed) != cap(m.uncompressed) {
 			continue
 		}
 
-		if err := b.Flush(); err != nil {
+		if err := m.Flush(); err != nil {
 			return err
 		}
 	}
@@ -322,29 +325,37 @@ func (b *blockWriter) WriteMetadata(data []byte) error {
 	return nil
 }
 
-func (b *blockWriter) Flush() error {
-	lew := byteio.LittleEndianWriter{Writer: b.w}
-	data := b.compressedOrUncompressed()
+func (m *metadataWriter) Flush() error {
+	lew := byteio.LittleEndianWriter{Writer: &m.buf}
+	data := m.compressedOrUncompressed()
 	header := uint16(len(data))
 
 	if header == 0 {
 		return nil
 	}
 
-	if &data[0] == &b.uncompressed[0] {
+	if &data[0] == &m.uncompressed[0] {
 		header |= metadataBlockCompressedMask
 	}
 
-	b.uncompressed = b.uncompressed[:0]
-	b.compressed = b.compressed[:0]
+	m.uncompressed = m.uncompressed[:0]
+	m.compressed = m.compressed[:0]
 
 	if _, err := lew.WriteUint16(header); err != nil {
 		return err
 	}
 
-	if _, err := b.w.Write(data); err != nil {
+	if _, err := m.buf.Write(data); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (m *metadataWriter) compressedOrUncompressed() memio.LimitedBuffer {
+	if _, err := m.compressor.Write(m.uncompressed); !errors.Is(err, io.ErrShortWrite) {
+		return m.compressed
+	}
+
+	return m.uncompressed
 }
