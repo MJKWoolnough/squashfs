@@ -23,6 +23,8 @@ type Builder struct {
 	defaultGroup   uint32
 	defaultModTime time.Time
 
+	blockWriter blockWriter
+
 	mu   sync.Mutex
 	root *node
 }
@@ -44,6 +46,19 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 			return nil, err
 		}
 	}
+
+	blockStart := int64(headerLength)
+
+	if b.superblock.Flags&flagCompressionOptions == 0 {
+		blockStart -= compressionOptionsLength
+	}
+
+	c, err := b.superblock.CompressionOptions.getCompressedWriter()
+	if err != nil {
+		return nil, err
+	}
+
+	b.blockWriter = newBlockWriter(w, blockStart, b.superblock.BlockSize, c)
 
 	b.root = &node{
 		owner:   b.defaultOwner,
@@ -201,7 +216,7 @@ type blockWriter struct {
 	compressor   compressedWriter
 }
 
-func newBlockWriter(w io.WriterAt, start int64, blockSize int, compressor compressedWriter) blockWriter {
+func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor compressedWriter) blockWriter {
 	return blockWriter{
 		w:            io.NewOffsetWriter(w, start),
 		uncompressed: make(memio.LimitedBuffer, blockSize),
