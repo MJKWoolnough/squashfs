@@ -307,6 +307,10 @@ func newMetadataWriter(compressor CompressorOptions) (metadataWriter, error) {
 	}, nil
 }
 
+func (m *metadataWriter) Pos() int {
+	return len(m.buf)
+}
+
 func (m *metadataWriter) Write(data []byte) error {
 	for len(data) > 0 {
 		n, _ := m.uncompressed.Write(data)
