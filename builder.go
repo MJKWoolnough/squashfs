@@ -23,7 +23,13 @@ type Builder struct {
 	defaultGroup   uint32
 	defaultModTime time.Time
 
-	blockWriter blockWriter
+	blockWriter   blockWriter
+	inodeData     memio.Buffer
+	inodeTable    blockWriter
+	fragmentData  memio.Buffer
+	fragmentTable blockWriter
+	idData        memio.Buffer
+	idTable       blockWriter
 
 	mu   sync.Mutex
 	root *dirNode
@@ -53,12 +59,21 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		blockStart -= compressionOptionsLength
 	}
 
-	c, err := b.superblock.CompressionOptions.getCompressedWriter()
-	if err != nil {
+	var err error
+
+	if b.blockWriter, err = newBlockWriter(w, blockStart, b.superblock.BlockSize, b.superblock.CompressionOptions); err != nil {
 		return nil, err
 	}
 
-	b.blockWriter = newBlockWriter(w, blockStart, b.superblock.BlockSize, c)
+	for table, data := range map[*blockWriter]*memio.Buffer{
+		&b.inodeTable:    &b.inodeData,
+		&b.fragmentTable: &b.fragmentData,
+		&b.idTable:       &b.idData,
+	} {
+		if *table, err = newMetadataWriter(data, 0, b.superblock.CompressionOptions); err != nil {
+			return nil, err
+		}
+	}
 
 	b.root = &dirNode{}
 
@@ -222,22 +237,32 @@ type blockWriter struct {
 	compressor   compressedWriter
 }
 
-func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor compressedWriter) blockWriter {
+func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor CompressorOptions) (blockWriter, error) {
+	c, err := compressor.getCompressedWriter()
+	if err != nil {
+		return blockWriter{}, err
+	}
+
 	return blockWriter{
 		w:            io.NewOffsetWriter(w, start),
 		uncompressed: make(memio.LimitedBuffer, blockSize),
 		compressed:   make(memio.LimitedBuffer, 0, blockSize),
-		compressor:   compressor,
-	}
+		compressor:   c,
+	}, nil
 }
 
-func newMetadataWriter(w io.WriterAt, start int64, compressor compressedWriter) blockWriter {
+func newMetadataWriter(w io.WriterAt, start int64, compressor CompressorOptions) (blockWriter, error) {
+	c, err := compressor.getCompressedWriter()
+	if err != nil {
+		return blockWriter{}, err
+	}
+
 	return blockWriter{
 		w:            io.NewOffsetWriter(w, start),
 		uncompressed: make(memio.LimitedBuffer, 0, blockSize),
 		compressed:   make(memio.LimitedBuffer, 0, blockSize),
-		compressor:   compressor,
-	}
+		compressor:   c,
+	}, nil
 }
 
 func (b *blockWriter) Pos() int64 {
