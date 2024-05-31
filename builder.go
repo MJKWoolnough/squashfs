@@ -26,7 +26,7 @@ type Builder struct {
 	blockWriter blockWriter
 
 	mu   sync.Mutex
-	root *node
+	root *dirNode
 }
 
 func Create(w io.WriterAt, options ...Option) (*Builder, error) {
@@ -60,11 +60,7 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 
 	b.blockWriter = newBlockWriter(w, blockStart, b.superblock.BlockSize, c)
 
-	b.root = &node{
-		owner:   b.defaultOwner,
-		group:   b.defaultGroup,
-		modTime: b.nodeModTime(),
-	}
+	b.root = &dirNode{}
 
 	return b, nil
 }
@@ -81,54 +77,42 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	n, err := b.addNode(p, options...)
-	if err != nil {
+	if err := b.addNode(p, &dirNode{
+		entry: entry{
+			name: path.Base(p),
+		},
+	}); err != nil {
 		return err
 	}
-
-	n.mode |= fs.ModeDir
 
 	return nil
 }
 
-func (b *Builder) addNode(p string, options ...InodeOption) (*node, error) {
+func (b *Builder) addNode(p string, c childNode) error {
 	if !fs.ValidPath(p) {
-		return nil, fs.ErrInvalid
+		return fs.ErrInvalid
 	}
 
 	if p == "." {
-		return nil, fs.ErrExist
+		return fs.ErrExist
 	}
-
-	n := &node{name: path.Base(p)}
 
 	if o := b.getParent(b.root, p); o == nil {
-		return nil, fs.ErrInvalid
-	} else if n != o.insertSortedNode(n) {
-		return nil, fs.ErrExist
+		return fs.ErrInvalid
+	} else if c != o.insertSortedNode(c) {
+		return fs.ErrExist
 	}
 
-	n.mode = b.defaultMode | fs.ModePerm
-	n.owner = b.defaultOwner
-	n.group = b.defaultGroup
-
-	for _, opt := range options {
-		opt(n)
-	}
-
-	if n.modTime.IsZero() {
-		n.modTime = b.nodeModTime()
-	}
-
-	return n, nil
+	return nil
 }
 
 func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	_, err := b.addNode(p, options...)
-	if err != nil {
+	if err := b.addNode(p, entry{
+		name: path.Base(p),
+	}); err != nil {
 		return err
 	}
 
@@ -139,56 +123,73 @@ func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	n, err := b.addNode(p, options...)
-	if err != nil {
+	if err := b.addNode(p, entry{
+		name: path.Base(p),
+	}); err != nil {
 		return err
 	}
-
-	n.mode = fs.ModeSymlink | fs.ModePerm
 
 	return nil
 }
 
-type node struct {
-	name         string
-	owner, group uint32
-	mode         fs.FileMode
-	modTime      time.Time
-	children     []*node
+type childNode interface {
+	Name() string
+	AsDir() *dirNode
 }
 
-func (b *Builder) getParent(n *node, path string) *node {
+type entry struct {
+	name     string
+	metadata uint32
+	typ      uint16
+}
+
+func (e entry) Name() string {
+	return e.name
+}
+
+func (e entry) AsDir() *dirNode {
+	return nil
+}
+
+type dirNode struct {
+	entry
+	inode    uint64
+	children []childNode
+}
+
+func (d *dirNode) AsDir() *dirNode {
+	return d
+}
+
+func (b *Builder) getParent(n *dirNode, path string) *dirNode {
 	first, rest := splitPath(path)
 
 	if first == "" {
 		return n
 	}
 
-	p := n.insertSortedNode(&node{
-		name:  first,
-		owner: b.defaultOwner,
-		group: b.defaultGroup,
-		mode:  fs.ModeDir | b.defaultMode,
+	p := n.insertSortedNode(&dirNode{
+		entry: entry{
+			name: first,
+		},
 	})
 
-	if !p.mode.IsDir() {
+	d := p.AsDir()
+
+	if d == nil {
 		return nil
 	}
 
-	if p.modTime.IsZero() {
-		p.modTime = b.nodeModTime()
-	}
-
 	if rest != "" {
-		return b.getParent(p, rest)
+		return b.getParent(d, rest)
 	}
 
-	return p
+	return d
 }
 
-func (n *node) insertSortedNode(i *node) *node {
-	pos, exists := slices.BinarySearchFunc(n.children, i, func(a, b *node) int {
-		return strings.Compare(a.name, b.name)
+func (n *dirNode) insertSortedNode(i childNode) childNode {
+	pos, exists := slices.BinarySearchFunc(n.children, i, func(a, b childNode) int {
+		return strings.Compare(a.Name(), b.Name())
 	})
 
 	if exists {
