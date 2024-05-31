@@ -85,6 +85,10 @@ func (s *superblock) readSuperBlockDetails(ler *byteio.StickyLittleEndianReader)
 }
 
 func (s *superblock) writeTo(w io.Writer) error {
+	if s.ModTime.IsZero() {
+		s.ModTime = time.Now()
+	}
+
 	lew := byteio.StickyLittleEndianWriter{Writer: w}
 
 	lew.WriteUint32(magic)
