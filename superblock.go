@@ -111,7 +111,9 @@ func (s *superblock) writeTo(w io.Writer) error {
 	lew.WriteUint64(s.FragTable)
 	lew.WriteUint64(s.ExportTable)
 
-	s.CompressionOptions.writeTo(&lew)
+	if s.Flags&flagCompressionOptions != 0 {
+		s.CompressionOptions.writeTo(&lew)
+	}
 
 	return lew.Err
 }
