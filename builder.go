@@ -110,6 +110,11 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	_, err := b.blockWriter.WriteFile(r)
+	if err != nil {
+		return err
+	}
+
 	if err := b.addNode(p, entry{
 		name: path.Base(p),
 	}); err != nil {
