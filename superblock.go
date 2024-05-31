@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	headerLength           = 104
-	magic                  = 0x73717368 // hsqs
-	versionMajor           = 4
-	versionMinor           = 0
-	flagCompressionOptions = 0x400
+	headerLength             = 104
+	compressionOptionsLength = 4
+	magic                    = 0x73717368 // hsqs
+	versionMajor             = 4
+	versionMinor             = 0
+	flagCompressionOptions   = 0x400
 )
 
 type superblock struct {
