@@ -41,6 +41,12 @@ func Compression(c CompressorOptions) Option {
 
 		b.superblock.CompressionOptions = c
 
+		if c.isDefault() {
+			b.superblock.Flags &= ^uint16(flagCompressionOptions)
+		} else {
+			b.superblock.Flags |= flagCompressionOptions
+		}
+
 		return nil
 	}
 }
