@@ -302,9 +302,9 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 	var sizes []uint32
 
 	for {
-		if _, err := io.ReadFull(r, b.uncompressed); errors.Is(err, io.EOF) {
-			break
-		} else if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		if _, err := io.ReadFull(r, b.uncompressed); errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return sizes, nil
+		} else if err != nil {
 			return nil, err
 		}
 
@@ -319,8 +319,6 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 
 		sizes = append(sizes, uint32(n))
 	}
-
-	return sizes, nil
 }
 
 func (b *blockWriter) compressedOrUncompressed() memio.LimitedBuffer {
