@@ -324,7 +324,9 @@ func (m *metadataWriter) Pos() int {
 	return len(m.buf)<<16 | len(m.uncompressed)
 }
 
-func (m *metadataWriter) Write(data []byte) error {
+func (m *metadataWriter) Write(data []byte) (int, error) {
+	l := len(data)
+
 	for len(data) > 0 {
 		n, _ := m.uncompressed.Write(data)
 
@@ -335,11 +337,11 @@ func (m *metadataWriter) Write(data []byte) error {
 		}
 
 		if err := m.Flush(); err != nil {
-			return err
+			return l, err
 		}
 	}
 
-	return nil
+	return l, nil
 }
 
 func (m *metadataWriter) Flush() error {
