@@ -213,7 +213,7 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 
 	f.writeTo(&lew)
 
-	return nil
+	return lew.Err
 }
 
 func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
@@ -226,7 +226,27 @@ func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
 		return err
 	}
 
-	return nil
+	s := symlinkStat{
+		commonStat: commonStat{
+			perms: uint16(fs.ModePerm),
+			uid:   b.defaultOwner,
+			gid:   b.defaultGroup,
+			mtime: b.defaultModTime,
+		},
+
+		linkCount:  1,
+		targetPath: dest,
+	}
+
+	for _, opt := range options {
+		opt(&s.commonStat)
+	}
+
+	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
+
+	s.writeTo(&lew)
+
+	return lew.Err
 }
 
 type childNode interface {
