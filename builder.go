@@ -134,16 +134,47 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	_, err := b.blockWriter.WriteFile(r)
+	start := uint64(b.blockWriter.Pos())
+
+	sizes, err := b.blockWriter.WriteFile(r)
 	if err != nil {
 		return err
 	}
 
 	if err := b.addNode(p, entry{
-		name: path.Base(p),
+		name:     path.Base(p),
+		metadata: uint32(b.inodeTable.Pos()),
 	}); err != nil {
 		return err
 	}
+
+	var (
+		totalSize   uint64
+		fragIndex   uint32 = fieldDisabled
+		blockOffset uint32
+	)
+
+	for _, size := range sizes {
+		totalSize += uint64(size)
+	}
+
+	f := fileStat{
+		commonStat: commonStat{
+			perms: uint16(b.defaultMode),
+			uid:   b.defaultOwner,
+			gid:   b.defaultGroup,
+			mtime: b.defaultModTime,
+		},
+		blocksStart: start,
+		fileSize:    totalSize,
+		blockSizes:  sizes,
+		fragIndex:   fragIndex,
+		blockOffset: blockOffset,
+	}
+
+	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
+
+	f.writeTo(&lew)
 
 	return nil
 }
