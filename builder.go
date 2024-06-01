@@ -12,6 +12,7 @@ import (
 
 	"vimagination.zapto.org/byteio"
 	"vimagination.zapto.org/memio"
+	"vimagination.zapto.org/rwcount"
 )
 
 type Builder struct {
@@ -136,7 +137,9 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 
 	start := uint64(b.blockWriter.Pos())
 
-	sizes, err := b.blockWriter.WriteFile(r)
+	sr := rwcount.Reader{Reader: r}
+
+	sizes, err := b.blockWriter.WriteFile(&sr)
 	if err != nil {
 		return err
 	}
@@ -148,15 +151,12 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 		return err
 	}
 
+	totalSize := uint64(sr.Count)
+
 	var (
-		totalSize   uint64
 		fragIndex   uint32 = fieldDisabled
 		blockOffset uint32
 	)
-
-	for _, size := range sizes {
-		totalSize += uint64(size)
-	}
 
 	f := fileStat{
 		commonStat: commonStat{
