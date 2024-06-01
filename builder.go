@@ -89,11 +89,23 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if err := b.addNode(p, &dirNode{
+	d := &dirNode{
 		entry: entry{
 			name: path.Base(p),
 		},
-	}); err != nil {
+		commonStat: commonStat{
+			perms: uint16(b.defaultMode),
+			uid:   b.defaultOwner,
+			gid:   b.defaultGroup,
+			mtime: b.defaultModTime,
+		},
+	}
+
+	for _, opt := range options {
+		opt(&d.commonStat)
+	}
+
+	if err := b.addNode(p, d); err != nil {
 		return err
 	}
 
@@ -170,8 +182,9 @@ func (e entry) AsDir() *dirNode {
 
 type dirNode struct {
 	entry
-	inode    uint64
-	children []childNode
+	commonStat commonStat
+	inode      uint64
+	children   []childNode
 }
 
 func (d *dirNode) AsDir() *dirNode {
