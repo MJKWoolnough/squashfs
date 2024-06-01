@@ -92,23 +92,23 @@ func DefaultModTime(t time.Time) Option {
 	}
 }
 
-type InodeOption func(*node)
+type InodeOption func(*commonStat)
 
 func Owner(owner, group uint32) InodeOption {
-	return func(n *node) {
-		n.owner = owner
-		n.group = group
+	return func(c *commonStat) {
+		c.uid = owner
+		c.gid = group
 	}
 }
 
 func ModTime(t time.Time) InodeOption {
-	return func(n *node) {
-		n.modTime = t
+	return func(c *commonStat) {
+		c.mtime = t
 	}
 }
 
 func Mode(m fs.FileMode) InodeOption {
-	return func(n *node) {
-		n.mode = m
+	return func(c *commonStat) {
+		c.perms = uint16(m)
 	}
 }
