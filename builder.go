@@ -24,10 +24,11 @@ type Builder struct {
 	defaultGroup   uint32
 	defaultModTime time.Time
 
-	blockWriter   blockWriter
-	inodeTable    metadataWriter
-	fragmentTable metadataWriter
-	idTable       metadataWriter
+	blockWriter    blockWriter
+	inodeTable     metadataWriter
+	fragmentBuffer memio.Buffer
+	fragmentTable  metadataWriter
+	idTable        metadataWriter
 
 	mu   sync.Mutex
 	root *dirNode
@@ -50,6 +51,8 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 			return nil, err
 		}
 	}
+
+	b.fragmentBuffer = make(memio.Buffer, 0, b.superblock.BlockSize)
 
 	blockStart := int64(headerLength)
 
@@ -152,11 +155,45 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	}
 
 	totalSize := uint64(sr.Count)
+	fragmentLength := totalSize % uint64(b.superblock.BlockSize)
 
 	var (
 		fragIndex   uint32 = fieldDisabled
 		blockOffset uint32
 	)
+
+	if fragmentLength != 0 {
+		fragment := b.blockWriter.uncompressed[:fragmentLength]
+
+		if len(fragment) > cap(b.fragmentBuffer)-len(b.fragmentBuffer) {
+			fragPos := uint64(b.blockWriter.Pos())
+
+			n, err := b.blockWriter.WriteFragments(b.fragmentBuffer)
+			if err != nil {
+				return err
+			}
+
+			lew := byteio.LittleEndianWriter{Writer: &b.fragmentTable}
+			if _, err := lew.WriteUint64(fragPos); err != nil {
+				return err
+			}
+
+			if _, err := lew.WriteUint32(uint32(n)); err != nil {
+				return err
+			}
+
+			if _, err := lew.WriteUint32(0); err != nil {
+				return err
+			}
+
+			b.fragmentBuffer = b.fragmentBuffer[:0]
+		}
+
+		fragIndex = uint32(b.fragmentTable.Pos())
+		blockOffset = uint32(len(b.fragmentBuffer))
+
+		b.fragmentBuffer = append(b.fragmentBuffer, fragment...)
+	}
 
 	f := fileStat{
 		commonStat: commonStat{
@@ -312,7 +349,7 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 
 		b.compressor.Reset(&c)
 
-		n, err := b.w.Write(b.compressedOrUncompressed())
+		n, err := b.w.Write(b.compressIfSmaller(b.uncompressed))
 		if err != nil {
 			return nil, err
 		}
@@ -321,12 +358,16 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 	}
 }
 
-func (b *blockWriter) compressedOrUncompressed() memio.LimitedBuffer {
-	if _, err := b.compressor.Write(b.uncompressed); !errors.Is(err, io.ErrShortWrite) {
+func (b *blockWriter) WriteFragments(fragments []byte) (int, error) {
+	return b.w.Write(b.compressIfSmaller(fragments))
+}
+
+func (b *blockWriter) compressIfSmaller(data []byte) []byte {
+	if _, err := b.compressor.Write(data); !errors.Is(err, io.ErrShortWrite) {
 		return b.compressed
 	}
 
-	return b.uncompressed
+	return data
 }
 
 type metadataWriter struct {
