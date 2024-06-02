@@ -47,6 +47,7 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 				BlockSize: defaultBlockSize,
 			},
 			CompressionOptions: DefaultGzipOptions(),
+			ExportTable:        0xffffffffffffffff,
 		},
 	}
 
