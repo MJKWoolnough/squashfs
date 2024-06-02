@@ -15,6 +15,10 @@ import (
 	"vimagination.zapto.org/rwcount"
 )
 
+const padTo = 1 << 12
+
+var zeroPad [1]byte
+
 type Builder struct {
 	writer     io.WriterAt
 	superblock superblock
@@ -257,6 +261,71 @@ func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
 		linkCount:  1,
 		targetPath: dest,
 	})
+}
+
+func (b *Builder) Close() error {
+	if err := b.writeFragments(); err != nil {
+		return err
+	}
+
+	// walk tree to write dir inodes
+
+	dirTable, err := newMetadataWriter(b.superblock.CompressionOptions)
+	if err != nil {
+		return err
+	}
+
+	b.walkTree(&dirTable)
+
+	pos := b.blockWriter.Pos()
+
+	b.superblock.IDTable = uint64(pos)
+
+	n, err := b.writer.WriteAt(b.idTable.buf, pos)
+	if err != nil {
+		return err
+	}
+
+	pos += int64(n)
+
+	b.superblock.DirTable = uint64(pos)
+
+	n, err = b.writer.WriteAt(dirTable.buf, pos)
+	if err != nil {
+		return err
+	}
+
+	pos += int64(n)
+
+	b.superblock.FragTable = uint64(pos)
+
+	n, err = b.writer.WriteAt(b.fragmentTable.buf, pos)
+	if err != nil {
+		return err
+	}
+
+	pos += int64(n)
+
+	b.superblock.IDTable = uint64(pos)
+
+	n, err = b.writer.WriteAt(b.idTable.buf, pos)
+	if err != nil {
+		return err
+	}
+
+	pos += int64(n)
+
+	if diff := pos % padTo; diff != 0 {
+		if _, err := b.writer.WriteAt(zeroPad[:], pos+diff); err != nil {
+			return err
+		}
+	}
+
+	return b.superblock.writeTo(io.NewOffsetWriter(b.writer, 0))
+}
+
+func (b *Builder) walkTree(_dirTable *metadataWriter) error {
+	return nil
 }
 
 type childNode interface {
