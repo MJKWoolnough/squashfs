@@ -97,12 +97,7 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 		entry: entry{
 			name: path.Base(p),
 		},
-		commonStat: commonStat{
-			perms: uint16(b.defaultMode),
-			uid:   b.defaultOwner,
-			gid:   b.defaultGroup,
-			mtime: b.defaultModTime,
-		},
+		commonStat: b.commonStat(options...),
 	}
 
 	for _, opt := range options {
@@ -114,6 +109,21 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 	}
 
 	return nil
+}
+
+func (b *Builder) commonStat(options ...InodeOption) commonStat {
+	c := commonStat{
+		perms: uint16(b.defaultMode),
+		uid:   b.defaultOwner,
+		gid:   b.defaultGroup,
+		mtime: b.defaultModTime,
+	}
+
+	for _, opt := range options {
+		opt(&c)
+	}
+
+	return c
 }
 
 func (b *Builder) addNode(p string, c childNode) error {
@@ -196,21 +206,12 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	}
 
 	f := fileStat{
-		commonStat: commonStat{
-			perms: uint16(b.defaultMode),
-			uid:   b.defaultOwner,
-			gid:   b.defaultGroup,
-			mtime: b.defaultModTime,
-		},
+		commonStat:  b.commonStat(options...),
 		blocksStart: start,
 		fileSize:    totalSize,
 		blockSizes:  sizes,
 		fragIndex:   fragIndex,
 		blockOffset: blockOffset,
-	}
-
-	for _, opt := range options {
-		opt(&f.commonStat)
 	}
 
 	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
@@ -231,19 +232,9 @@ func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
 	}
 
 	s := symlinkStat{
-		commonStat: commonStat{
-			perms: uint16(fs.ModePerm),
-			uid:   b.defaultOwner,
-			gid:   b.defaultGroup,
-			mtime: b.defaultModTime,
-		},
-
+		commonStat: b.commonStat(options...),
 		linkCount:  1,
 		targetPath: dest,
-	}
-
-	for _, opt := range options {
-		opt(&s.commonStat)
 	}
 
 	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
