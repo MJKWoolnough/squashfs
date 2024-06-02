@@ -242,6 +242,7 @@ func (b *Builder) writeFragments() error {
 	}
 
 	b.fragmentBuffer = b.fragmentBuffer[:0]
+	b.superblock.FragCount++
 
 	return nil
 }
@@ -267,8 +268,6 @@ func (b *Builder) Close() error {
 	if err := b.writeFragments(); err != nil {
 		return err
 	}
-
-	// walk tree to write dir inodes
 
 	dirTable, err := newMetadataWriter(b.superblock.CompressionOptions)
 	if err != nil {
