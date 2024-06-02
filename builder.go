@@ -165,26 +165,9 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	}
 
 	totalSize := uint64(sr.Count)
-	fragmentLength := totalSize % uint64(b.superblock.BlockSize)
-
-	var (
-		fragIndex   uint32 = fieldDisabled
-		blockOffset uint32
-	)
-
-	if fragmentLength != 0 {
-		fragment := b.blockWriter.uncompressed[:fragmentLength]
-
-		if len(fragment) > cap(b.fragmentBuffer)-len(b.fragmentBuffer) {
-			if err := b.writeFragments(); err != nil {
-				return err
-			}
-		}
-
-		fragIndex = uint32(b.fragmentTable.Pos())
-		blockOffset = uint32(len(b.fragmentBuffer))
-
-		b.fragmentBuffer = append(b.fragmentBuffer, fragment...)
+	fragIndex, blockOffset, err := b.writePossibleFragment(totalSize)
+	if err != nil {
+		return err
 	}
 
 	f := fileStat{
@@ -201,6 +184,29 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	f.writeTo(&lew)
 
 	return lew.Err
+}
+
+func (b *Builder) writePossibleFragment(totalSize uint64) (uint32, uint32, error) {
+	fragmentLength := totalSize % uint64(b.superblock.BlockSize)
+
+	if fragmentLength == 0 {
+		return fieldDisabled, 0, nil
+	}
+
+	fragment := b.blockWriter.uncompressed[:fragmentLength]
+
+	if len(fragment) > cap(b.fragmentBuffer)-len(b.fragmentBuffer) {
+		if err := b.writeFragments(); err != nil {
+			return 0, 0, err
+		}
+	}
+
+	fragIndex := uint32(b.fragmentTable.Pos())
+	blockOffset := uint32(len(b.fragmentBuffer))
+
+	b.fragmentBuffer = append(b.fragmentBuffer, fragment...)
+
+	return fragIndex, blockOffset, nil
 }
 
 func (b *Builder) writeFragments() error {
