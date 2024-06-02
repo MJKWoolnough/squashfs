@@ -184,6 +184,8 @@ type inodeWriter interface {
 }
 
 func (b *Builder) writeInode(inode inodeWriter) error {
+	b.superblock.Inodes++
+
 	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
 
 	inode.writeTo(&lew)
