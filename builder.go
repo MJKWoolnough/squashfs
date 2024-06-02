@@ -164,8 +164,7 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 		return err
 	}
 
-	totalSize := uint64(sr.Count)
-	fragIndex, blockOffset, err := b.writePossibleFragment(totalSize)
+	fragIndex, blockOffset, err := b.writePossibleFragment(sr.Count)
 	if err != nil {
 		return err
 	}
@@ -173,7 +172,7 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	return b.writeInode(fileStat{
 		commonStat:  b.commonStat(options...),
 		blocksStart: start,
-		fileSize:    totalSize,
+		fileSize:    uint64(sr.Count),
 		blockSizes:  sizes,
 		fragIndex:   fragIndex,
 		blockOffset: blockOffset,
@@ -192,8 +191,8 @@ func (b *Builder) writeInode(inode inodeWriter) error {
 	return lew.Err
 }
 
-func (b *Builder) writePossibleFragment(totalSize uint64) (uint32, uint32, error) {
-	fragmentLength := totalSize % uint64(b.superblock.BlockSize)
+func (b *Builder) writePossibleFragment(totalSize int64) (uint32, uint32, error) {
+	fragmentLength := uint64(totalSize) % uint64(b.superblock.BlockSize)
 
 	if fragmentLength == 0 {
 		return fieldDisabled, 0, nil
