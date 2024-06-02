@@ -170,18 +170,24 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 		return err
 	}
 
-	f := fileStat{
+	return b.writeInode(fileStat{
 		commonStat:  b.commonStat(options...),
 		blocksStart: start,
 		fileSize:    totalSize,
 		blockSizes:  sizes,
 		fragIndex:   fragIndex,
 		blockOffset: blockOffset,
-	}
+	})
+}
 
+type inodeWriter interface {
+	writeTo(*byteio.StickyLittleEndianWriter)
+}
+
+func (b *Builder) writeInode(inode inodeWriter) error {
 	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
 
-	f.writeTo(&lew)
+	inode.writeTo(&lew)
 
 	return lew.Err
 }
@@ -245,17 +251,11 @@ func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
 		return err
 	}
 
-	s := symlinkStat{
+	return b.writeInode(symlinkStat{
 		commonStat: b.commonStat(options...),
 		linkCount:  1,
 		targetPath: dest,
-	}
-
-	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
-
-	s.writeTo(&lew)
-
-	return lew.Err
+	})
 }
 
 type childNode interface {
