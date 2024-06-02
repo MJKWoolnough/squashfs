@@ -176,27 +176,9 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 		fragment := b.blockWriter.uncompressed[:fragmentLength]
 
 		if len(fragment) > cap(b.fragmentBuffer)-len(b.fragmentBuffer) {
-			fragPos := uint64(b.blockWriter.Pos())
-
-			n, err := b.blockWriter.WriteFragments(b.fragmentBuffer)
-			if err != nil {
+			if err := b.writeFragments(); err != nil {
 				return err
 			}
-
-			lew := byteio.LittleEndianWriter{Writer: &b.fragmentTable}
-			if _, err := lew.WriteUint64(fragPos); err != nil {
-				return err
-			}
-
-			if _, err := lew.WriteUint32(uint32(n)); err != nil {
-				return err
-			}
-
-			if _, err := lew.WriteUint32(0); err != nil {
-				return err
-			}
-
-			b.fragmentBuffer = b.fragmentBuffer[:0]
 		}
 
 		fragIndex = uint32(b.fragmentTable.Pos())
@@ -219,6 +201,32 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	f.writeTo(&lew)
 
 	return lew.Err
+}
+
+func (b *Builder) writeFragments() error {
+	fragPos := uint64(b.blockWriter.Pos())
+
+	n, err := b.blockWriter.WriteFragments(b.fragmentBuffer)
+	if err != nil {
+		return err
+	}
+
+	lew := byteio.LittleEndianWriter{Writer: &b.fragmentTable}
+	if _, err := lew.WriteUint64(fragPos); err != nil {
+		return err
+	}
+
+	if _, err := lew.WriteUint32(uint32(n)); err != nil {
+		return err
+	}
+
+	if _, err := lew.WriteUint32(0); err != nil {
+		return err
+	}
+
+	b.fragmentBuffer = b.fragmentBuffer[:0]
+
+	return nil
 }
 
 func (b *Builder) Symlink(p, dest string, options ...InodeOption) error {
