@@ -209,6 +209,10 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 		blockOffset: blockOffset,
 	}
 
+	for _, opt := range options {
+		opt(&f.commonStat)
+	}
+
 	lew := byteio.StickyLittleEndianWriter{Writer: &b.inodeTable}
 
 	f.writeTo(&lew)
