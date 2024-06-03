@@ -409,8 +409,12 @@ type blockWriter struct {
 }
 
 func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor compressedWriter) blockWriter {
+	ow := io.NewOffsetWriter(w, 0)
+
+	ow.Seek(start, io.SeekStart)
+
 	return blockWriter{
-		w:            io.NewOffsetWriter(w, start),
+		w:            ow,
 		uncompressed: make(memio.LimitedBuffer, blockSize),
 		compressed:   make(memio.LimitedBuffer, 0, blockSize),
 		compressor:   compressor,
