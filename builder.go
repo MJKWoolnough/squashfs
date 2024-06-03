@@ -310,6 +310,12 @@ func (t *tableWriter) WriteTable(tablePos *uint64, p []byte) {
 		return
 	}
 
+	if len(p) == 0 {
+		*tablePos = noTable
+
+		return
+	}
+
 	*tablePos = uint64(t.pos)
 
 	n, err := t.w.WriteAt(p, t.pos)
