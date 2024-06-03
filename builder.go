@@ -290,7 +290,7 @@ func (b *Builder) Close() error {
 		return err
 	}
 
-	return b.superblock.writeTo(io.NewOffsetWriter(b.writer, 0))
+	return b.writeSuperblock()
 }
 
 type tableWriter struct {
@@ -338,6 +338,18 @@ func (t *tableWriter) PadTo4K() error {
 
 func (b *Builder) walkTree(_dirTable *metadataWriter) error {
 	return nil
+}
+
+func (b *Builder) writeSuperblock() error {
+	var header [headerLength]byte
+
+	h := memio.LimitedBuffer(header[:0])
+
+	b.superblock.writeTo(&h)
+
+	_, err := b.writer.WriteAt(h, 0)
+
+	return err
 }
 
 type childNode interface {
