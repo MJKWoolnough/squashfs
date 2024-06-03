@@ -69,7 +69,7 @@ func SqfsModTime(t uint32) Option {
 
 func DefaultMode(m fs.FileMode) Option {
 	return func(b *Builder) error {
-		b.defaultMode = m
+		b.defaultStat.perms = uint16(m & fs.ModePerm)
 
 		return nil
 	}
@@ -77,8 +77,8 @@ func DefaultMode(m fs.FileMode) Option {
 
 func DefaultOwner(owner, group uint32) Option {
 	return func(b *Builder) error {
-		b.defaultOwner = owner
-		b.defaultGroup = group
+		b.defaultStat.uid = owner
+		b.defaultStat.gid = group
 
 		return nil
 	}
@@ -86,7 +86,7 @@ func DefaultOwner(owner, group uint32) Option {
 
 func DefaultModTime(t time.Time) Option {
 	return func(b *Builder) error {
-		b.defaultModTime = t
+		b.defaultStat.mtime = t
 
 		return nil
 	}

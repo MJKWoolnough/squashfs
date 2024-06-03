@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
 
 	"vimagination.zapto.org/byteio"
 	"vimagination.zapto.org/memio"
@@ -26,10 +25,7 @@ type Builder struct {
 	writer     io.WriterAt
 	superblock superblock
 
-	defaultMode    fs.FileMode
-	defaultOwner   uint32
-	defaultGroup   uint32
-	defaultModTime time.Time
+	defaultStat commonStat
 
 	blockWriter    blockWriter
 	inodeTable     metadataWriter
@@ -88,14 +84,6 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 	return b, nil
 }
 
-func (b *Builder) nodeModTime() time.Time {
-	if b.defaultModTime.IsZero() {
-		return time.Now()
-	}
-
-	return b.defaultModTime
-}
-
 func (b *Builder) Dir(p string, options ...InodeOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -119,12 +107,7 @@ func (b *Builder) Dir(p string, options ...InodeOption) error {
 }
 
 func (b *Builder) commonStat(options ...InodeOption) commonStat {
-	c := commonStat{
-		perms: uint16(b.defaultMode),
-		uid:   b.defaultOwner,
-		gid:   b.defaultGroup,
-		mtime: b.defaultModTime,
-	}
+	c := b.defaultStat
 
 	for _, opt := range options {
 		opt(&c)
