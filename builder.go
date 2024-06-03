@@ -286,14 +286,8 @@ func (b *Builder) Close() error {
 	t.WriteTable(&b.superblock.FragTable, b.fragmentTable.buf)
 	t.WriteTable(&b.superblock.IDTable, b.idTable.buf)
 
-	if t.err != nil {
-		return t.err
-	}
-
-	if diff := t.pos % padTo; diff != 0 {
-		if _, err := b.writer.WriteAt(zeroPad[:], t.pos+diff); err != nil {
-			return err
-		}
+	if err := t.PadTo4K(); err != nil {
+		return err
 	}
 
 	return b.superblock.writeTo(io.NewOffsetWriter(b.writer, 0))
@@ -325,6 +319,21 @@ func (t *tableWriter) WriteTable(tablePos *uint64, p []byte) {
 	if err != nil {
 		t.err = err
 	}
+}
+
+func (t *tableWriter) PadTo4K() error {
+	if t.err != nil {
+		return t.err
+	}
+
+	diff := t.pos % padTo
+	if diff == 0 {
+		return nil
+	}
+
+	_, err := t.w.WriteAt(zeroPad[:], t.pos+diff)
+
+	return err
 }
 
 func (b *Builder) walkTree(_dirTable *metadataWriter) error {
