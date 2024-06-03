@@ -277,51 +277,49 @@ func (b *Builder) Close() error {
 
 	b.walkTree(&dirTable)
 
-	pos := b.blockWriter.Pos()
+	t := tableWriter{
+		w:   b.writer,
+		pos: b.blockWriter.Pos(),
+	}
 
-	b.superblock.IDTable = uint64(pos)
+	t.WriteTable(&b.superblock.IDTable, b.idTable.buf)
+	t.WriteTable(&b.superblock.DirTable, dirTable.buf)
+	t.WriteTable(&b.superblock.FragTable, b.fragmentTable.buf)
+	t.WriteTable(&b.superblock.IDTable, b.idTable.buf)
 
-	n, err := b.writer.WriteAt(b.idTable.buf, pos)
-	if err != nil {
+	if t.err != nil {
 		return err
 	}
 
-	pos += int64(n)
-
-	b.superblock.DirTable = uint64(pos)
-
-	n, err = b.writer.WriteAt(dirTable.buf, pos)
-	if err != nil {
-		return err
-	}
-
-	pos += int64(n)
-
-	b.superblock.FragTable = uint64(pos)
-
-	n, err = b.writer.WriteAt(b.fragmentTable.buf, pos)
-	if err != nil {
-		return err
-	}
-
-	pos += int64(n)
-
-	b.superblock.IDTable = uint64(pos)
-
-	n, err = b.writer.WriteAt(b.idTable.buf, pos)
-	if err != nil {
-		return err
-	}
-
-	pos += int64(n)
-
-	if diff := pos % padTo; diff != 0 {
-		if _, err := b.writer.WriteAt(zeroPad[:], pos+diff); err != nil {
+	if diff := t.pos % padTo; diff != 0 {
+		if _, err := b.writer.WriteAt(zeroPad[:], t.pos+diff); err != nil {
 			return err
 		}
 	}
 
 	return b.superblock.writeTo(io.NewOffsetWriter(b.writer, 0))
+}
+
+type tableWriter struct {
+	w   io.WriterAt
+	pos int64
+	err error
+}
+
+func (t *tableWriter) WriteTable(tablePos *uint64, p []byte) {
+	if t.err != nil {
+		return
+	}
+
+	*tablePos = uint64(t.pos)
+
+	n, err := t.w.WriteAt(p, t.pos)
+
+	t.pos += int64(n)
+
+	if err != nil {
+		t.err = err
+	}
 }
 
 func (b *Builder) walkTree(_dirTable *metadataWriter) error {
