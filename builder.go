@@ -65,20 +65,19 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		blockStart -= compressionOptionsLength
 	}
 
-	var err error
-
-	if b.blockWriter, err = newBlockWriter(w, blockStart, b.superblock.BlockSize, b.superblock.CompressionOptions); err != nil {
+	c, err := b.superblock.CompressionOptions.getCompressedWriter()
+	if err != nil {
 		return nil, err
 	}
+
+	b.blockWriter = newBlockWriter(w, blockStart, b.superblock.BlockSize, c)
 
 	for _, table := range [...]*metadataWriter{
 		&b.inodeTable,
 		&b.fragmentTable,
 		&b.idTable,
 	} {
-		if *table, err = newMetadataWriter(b.superblock.CompressionOptions); err != nil {
-			return nil, err
-		}
+		*table = newMetadataWriter(c)
 	}
 
 	b.root = &dirNode{}
@@ -270,10 +269,7 @@ func (b *Builder) Close() error {
 		return err
 	}
 
-	dirTable, err := newMetadataWriter(b.superblock.CompressionOptions)
-	if err != nil {
-		return err
-	}
+	dirTable := newMetadataWriter(b.blockWriter.compressor)
 
 	b.walkTree(&dirTable)
 
@@ -412,18 +408,13 @@ type blockWriter struct {
 	compressor   compressedWriter
 }
 
-func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor CompressorOptions) (blockWriter, error) {
-	c, err := compressor.getCompressedWriter()
-	if err != nil {
-		return blockWriter{}, err
-	}
-
+func newBlockWriter(w io.WriterAt, start int64, blockSize uint32, compressor compressedWriter) blockWriter {
 	return blockWriter{
 		w:            io.NewOffsetWriter(w, start),
 		uncompressed: make(memio.LimitedBuffer, blockSize),
 		compressed:   make(memio.LimitedBuffer, 0, blockSize),
-		compressor:   c,
-	}, nil
+		compressor:   compressor,
+	}
 }
 
 func (b *blockWriter) Pos() int64 {
@@ -474,17 +465,12 @@ type metadataWriter struct {
 	compressor   compressedWriter
 }
 
-func newMetadataWriter(compressor CompressorOptions) (metadataWriter, error) {
-	c, err := compressor.getCompressedWriter()
-	if err != nil {
-		return metadataWriter{}, err
-	}
-
+func newMetadataWriter(compressor compressedWriter) metadataWriter {
 	return metadataWriter{
 		uncompressed: make(memio.LimitedBuffer, 0, blockSize),
 		compressed:   make(memio.LimitedBuffer, 0, blockSize),
-		compressor:   c,
-	}, nil
+		compressor:   compressor,
+	}
 }
 
 func (m *metadataWriter) Pos() int {
