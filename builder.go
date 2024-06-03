@@ -442,10 +442,6 @@ func (b *blockWriter) WriteFile(r io.Reader) ([]uint32, error) {
 			return nil, err
 		}
 
-		c := b.compressed
-
-		b.compressor.Reset(&c)
-
 		n, err := b.w.Write(b.compressIfSmaller(b.uncompressed))
 		if err != nil {
 			return nil, err
@@ -460,8 +456,12 @@ func (b *blockWriter) WriteFragments(fragments []byte) (int, error) {
 }
 
 func (b *blockWriter) compressIfSmaller(data []byte) []byte {
+	c := b.compressed
+
+	b.compressor.Reset(&c)
+
 	if _, err := b.compressor.Write(data); !errors.Is(err, io.ErrShortWrite) {
-		return b.compressed
+		return c
 	}
 
 	return data
@@ -539,8 +539,12 @@ func (m *metadataWriter) Flush() error {
 }
 
 func (m *metadataWriter) compressedOrUncompressed() memio.LimitedBuffer {
+	c := m.compressed
+
+	m.compressor.Reset(&c)
+
 	if _, err := m.compressor.Write(m.uncompressed); !errors.Is(err, io.ErrShortWrite) {
-		return m.compressed
+		return c
 	}
 
 	return m.uncompressed
