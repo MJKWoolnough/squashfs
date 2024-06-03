@@ -288,7 +288,7 @@ func (b *Builder) Close() error {
 	t.WriteTable(&b.superblock.IDTable, b.idTable.buf)
 
 	if t.err != nil {
-		return err
+		return t.err
 	}
 
 	if diff := t.pos % padTo; diff != 0 {
