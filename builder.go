@@ -15,7 +15,10 @@ import (
 	"vimagination.zapto.org/rwcount"
 )
 
-const padTo = 1 << 12
+const (
+	padTo   = 1 << 12
+	noTable = 0xffffffffffffffff
+)
 
 var zeroPad [1]byte
 
@@ -47,7 +50,7 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 				BlockSize: defaultBlockSize,
 			},
 			CompressionOptions: DefaultGzipOptions(),
-			ExportTable:        0xffffffffffffffff,
+			ExportTable:        noTable,
 		},
 	}
 
