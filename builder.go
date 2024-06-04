@@ -391,16 +391,16 @@ func (b *Builder) getParent(n *dirNode, path string) *dirNode {
 	return d
 }
 
-func (n *dirNode) insertSortedNode(i childNode) childNode {
-	pos, exists := slices.BinarySearchFunc(n.children, i, func(a, b childNode) int {
+func (d *dirNode) insertSortedNode(i childNode) childNode {
+	pos, exists := slices.BinarySearchFunc(d.children, i, func(a, b childNode) int {
 		return strings.Compare(a.Name(), b.Name())
 	})
 
 	if exists {
-		return n.children[pos]
+		return d.children[pos]
 	}
 
-	n.children = slices.Insert(n.children, pos, i)
+	d.children = slices.Insert(d.children, pos, i)
 
 	return i
 }
