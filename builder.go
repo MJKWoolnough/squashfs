@@ -40,7 +40,6 @@ type Builder struct {
 func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 	b := &Builder{
 		writer: w,
-
 		superblock: superblock{
 			Stats: Stats{
 				BlockSize: defaultBlockSize,
@@ -48,6 +47,7 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 			CompressionOptions: DefaultGzipOptions(),
 			ExportTable:        noTable,
 		},
+		root: &dirNode{},
 	}
 
 	for _, o := range options {
@@ -56,32 +56,31 @@ func Create(w io.WriterAt, options ...Option) (*Builder, error) {
 		}
 	}
 
-	b.fragmentBuffer = make(memio.Buffer, 0, b.superblock.BlockSize)
+	if err := b.setWriters(); err != nil {
+		return nil, err
+	}
 
+	return b, nil
+}
+
+func (b *Builder) setWriters() error {
 	blockStart := int64(headerLength)
-
 	if b.superblock.Flags&flagCompressionOptions == 0 {
 		blockStart -= compressionOptionsLength
 	}
 
 	c, err := b.superblock.CompressionOptions.getCompressedWriter()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	b.blockWriter = newBlockWriter(w, blockStart, b.superblock.BlockSize, c)
+	b.fragmentBuffer = make(memio.Buffer, 0, b.superblock.BlockSize)
+	b.blockWriter = newBlockWriter(b.writer, blockStart, b.superblock.BlockSize, c)
+	b.inodeTable = newMetadataWriter(c)
+	b.fragmentTable = newMetadataWriter(c)
+	b.idTable = newMetadataWriter(c)
 
-	for _, table := range [...]*metadataWriter{
-		&b.inodeTable,
-		&b.fragmentTable,
-		&b.idTable,
-	} {
-		*table = newMetadataWriter(c)
-	}
-
-	b.root = &dirNode{}
-
-	return b, nil
+	return nil
 }
 
 func (b *Builder) Dir(p string, options ...InodeOption) error {
