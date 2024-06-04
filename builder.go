@@ -283,6 +283,22 @@ func (b *Builder) Char(p string, deviceNumber uint32, options ...InodeOption) er
 	})
 }
 
+func (b *Builder) FIFO(p string, options ...InodeOption) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if err := b.addNode(p, entry{
+		name: path.Base(p),
+	}); err != nil {
+		return err
+	}
+
+	return b.writeInode(fifoStat{
+		commonStat: b.commonStat(options...),
+		linkCount:  1,
+	})
+}
+
 func (b *Builder) Close() error {
 	if err := b.writeFragments(); err != nil {
 		return err
