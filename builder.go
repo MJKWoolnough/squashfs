@@ -147,7 +147,7 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 		return err
 	}
 
-	if err := b.addNode(p, entry{
+	if err = b.addNode(p, entry{
 		name:     path.Base(p),
 		metadata: uint32(b.inodeTable.Pos()),
 	}); err != nil {
