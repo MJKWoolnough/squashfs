@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const readPerm = 0o444
+
 type resolver struct {
 	*SquashFS
 	fullPath, path     string
@@ -39,7 +41,7 @@ func (r *resolver) resolve(root fs.FileInfo, resolveLast bool) (curr fs.FileInfo
 	curr = root
 
 	for r.path != "" {
-		if curr.Mode()&0o444 == 0 {
+		if curr.Mode()&readPerm == 0 {
 			return nil, fs.ErrPermission
 		} else if dir, ok := curr.(dirStat); !ok {
 			return nil, fs.ErrInvalid
