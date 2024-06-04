@@ -12,9 +12,9 @@ const (
 	maxBlockSize     = 1 << 20 // 1MB
 )
 
-type Option func(*Builder) error
+type BuildOption func(*Builder) error
 
-func BlockSize(blockSize uint32) Option {
+func BlockSize(blockSize uint32) BuildOption {
 	return func(b *Builder) error {
 		if blockSize < minBlockSize || blockSize > maxBlockSize || bits.OnesCount32(blockSize) != 1 {
 			return ErrInvalidBlockSize
@@ -33,7 +33,7 @@ var (
 	BlockSize1M   = BlockSize(maxBlockSize)
 )
 
-func Compression(c CompressorOptions) Option {
+func Compression(c CompressorOptions) BuildOption {
 	return func(b *Builder) error {
 		if c == nil {
 			return ErrInvalidCompressor
@@ -51,7 +51,7 @@ func Compression(c CompressorOptions) Option {
 	}
 }
 
-func ExportTable() Option {
+func ExportTable() BuildOption {
 	return func(b *Builder) error {
 		b.superblock.Stats.Flags |= 0x80
 
@@ -59,7 +59,7 @@ func ExportTable() Option {
 	}
 }
 
-func SqfsModTime(t uint32) Option {
+func SqfsModTime(t uint32) BuildOption {
 	return func(b *Builder) error {
 		b.superblock.Stats.ModTime = time.Unix(int64(t), 0)
 
@@ -67,7 +67,7 @@ func SqfsModTime(t uint32) Option {
 	}
 }
 
-func DefaultMode(m fs.FileMode) Option {
+func DefaultMode(m fs.FileMode) BuildOption {
 	return func(b *Builder) error {
 		b.defaultStat.perms = uint16(m & fs.ModePerm)
 
@@ -75,7 +75,7 @@ func DefaultMode(m fs.FileMode) Option {
 	}
 }
 
-func DefaultOwner(owner, group uint32) Option {
+func DefaultOwner(owner, group uint32) BuildOption {
 	return func(b *Builder) error {
 		b.defaultStat.uid = owner
 		b.defaultStat.gid = group
@@ -84,7 +84,7 @@ func DefaultOwner(owner, group uint32) Option {
 	}
 }
 
-func DefaultModTime(t time.Time) Option {
+func DefaultModTime(t time.Time) BuildOption {
 	return func(b *Builder) error {
 		b.defaultStat.mtime = t
 

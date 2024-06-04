@@ -37,7 +37,7 @@ type Builder struct {
 	root *dirNode
 }
 
-func Create(w io.WriterAt, options ...Option) (*Builder, error) {
+func Create(w io.WriterAt, options ...BuildOption) (*Builder, error) {
 	b := &Builder{
 		writer: w,
 		superblock: superblock{
