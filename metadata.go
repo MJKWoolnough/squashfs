@@ -60,11 +60,14 @@ func (b *blockReader) nextReader() error {
 
 	b.r = io.NewSectionReader(b.reader, b.next+blockHeaderSize, size)
 
+	var c Compressor
 	if header&metadataBlockCompressedMask == 0 {
-		b.r, err = b.blockCache.getBlock(b.next, b.r, b.superblock.Compressor)
-		if err != nil {
-			return err
-		}
+		c = b.superblock.Compressor
+	}
+
+	b.r, err = b.blockCache.getBlock(b.next, b.r, c)
+	if err != nil {
+		return err
 	}
 
 	b.next += size

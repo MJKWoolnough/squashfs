@@ -122,10 +122,14 @@ func (b *blockCache) addData(ptr int64, data []byte) {
 }
 
 func decompressBlock(r io.Reader, c Compressor) ([]byte, error) {
-	cr, err := c.decompress(r)
-	if err != nil {
-		return nil, err
+	if c != 0 {
+		cr, err := c.decompress(r)
+		if err != nil {
+			return nil, err
+		}
+
+		r = cr
 	}
 
-	return io.ReadAll(cr)
+	return io.ReadAll(r)
 }
