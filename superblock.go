@@ -112,11 +112,15 @@ func (s *superblock) writeTo(w io.Writer) error {
 	lew.WriteUint64(s.FragTable)
 	lew.WriteUint64(s.ExportTable)
 
-	if s.Flags&flagCompressionOptions != 0 {
-		s.CompressionOptions.writeTo(&lew)
-	}
+	s.writeCompressionOptions(&lew)
 
 	return lew.Err
+}
+
+func (s *superblock) writeCompressionOptions(lew *byteio.StickyLittleEndianWriter) {
+	if s.Flags&flagCompressionOptions != 0 {
+		s.CompressionOptions.writeTo(lew)
+	}
 }
 
 // Type Stats contains basic data about the SquashFS file, read from the
