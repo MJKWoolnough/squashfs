@@ -6,7 +6,11 @@ import (
 	"strings"
 )
 
-const readPerm = 0o444
+const (
+	readPerm = 0o444
+
+	maximumRedirects = 1024
+)
 
 type resolver struct {
 	*SquashFS
@@ -24,8 +28,6 @@ func (s *SquashFS) resolve(fpath string, resolveLast bool) (fs.FileInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	const maximumRedirects = 1024
 
 	r := resolver{
 		SquashFS:           s,
