@@ -36,6 +36,13 @@ func chmod(perms fs.FileMode) option {
 	}
 }
 
+func owner(uid, gid int) option {
+	return func(h *tar.Header) {
+		h.Uid = uid
+		h.Gid = gid
+	}
+}
+
 type directory struct {
 	tar.Header
 	children []child
