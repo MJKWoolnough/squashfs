@@ -133,7 +133,7 @@ func (f *file) getBlockReader(block int) (io.ReadSeeker, error) {
 }
 
 func (f *file) getFragmentDetails() (start uint64, size uint32, err error) {
-	r, err := f.squashfs.readMetadataFromLookupTable(int64(f.squashfs.superblock.FragTable), int64(f.file.fragIndex))
+	r, err := f.squashfs.readMetadataFromLookupTable(int64(f.squashfs.superblock.FragTable), int64(f.file.fragIndex), 16)
 	ler := byteio.StickyLittleEndianReader{
 		Reader: r,
 	}
