@@ -109,11 +109,8 @@ func (f *file) getOffsetReader(pos int64) (io.ReadSeeker, error) {
 }
 
 const (
-	sizeMask           = 0x00ffffff
-	compressionMask    = 0x01000000
-	fragmentMDShift    = 10
-	fragmentMDLen      = 8
-	fragmentIndexShift = 4
+	sizeMask        = 0x00ffffff
+	compressionMask = 0x01000000
 )
 
 func (f *file) getBlockReader(block int) (io.ReadSeeker, error) {
@@ -136,18 +133,10 @@ func (f *file) getBlockReader(block int) (io.ReadSeeker, error) {
 }
 
 func (f *file) getFragmentDetails() (start uint64, size uint32, err error) {
-	ptr := int64(f.squashfs.superblock.FragTable) + int64(f.file.fragIndex>>fragmentMDShift)
+	r, err := f.squashfs.readMetadataFromLookupTable(int64(f.squashfs.superblock.FragTable), int64(f.file.fragIndex))
 	ler := byteio.StickyLittleEndianReader{
-		Reader: io.NewSectionReader(f.squashfs.reader, ptr, fragmentMDLen),
+		Reader: r,
 	}
-
-	mdPos := ler.ReadUint64()
-
-	if ler.Err != nil {
-		return 0, 0, ler.Err
-	}
-
-	ler.Reader, ler.Err = f.squashfs.readMetadata((uint64(f.file.fragIndex)<<fragmentIndexShift)%blockSize, mdPos)
 
 	start = ler.ReadUint64()
 	size = ler.ReadUint32()

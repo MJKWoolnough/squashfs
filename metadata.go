@@ -16,6 +16,10 @@ const (
 
 	metadataBlockSizeMask       = 0x7fff
 	metadataBlockCompressedMask = 0x8000
+
+	lookupMDShift    = 10
+	lookupMDLen      = 8
+	lookupIndexShift = 4
 )
 
 func (s *SquashFS) readMetadata(pointer, table uint64) (*blockReader, error) {
@@ -36,6 +40,20 @@ func (s *SquashFS) readMetadata(pointer, table uint64) (*blockReader, error) {
 	}
 
 	return b, nil
+}
+
+func (s *SquashFS) readMetadataFromLookupTable(table, index int64) (*blockReader, error) {
+	ptr := table + index>>lookupMDShift
+	ler := byteio.LittleEndianReader{
+		Reader: io.NewSectionReader(s.reader, ptr, lookupMDLen),
+	}
+
+	mdPos, _, err := ler.ReadUint64()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.readMetadata((uint64(index)<<lookupIndexShift)%blockSize, mdPos)
 }
 
 type blockReader struct {
