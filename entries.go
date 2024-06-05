@@ -598,7 +598,12 @@ func (s *SquashFS) getID(ler *byteio.StickyLittleEndianReader) uint32 {
 	)
 
 	r := ler.Reader
-	ler.Reader = io.NewSectionReader(s.reader, int64(id<<idPosShift), idLength)
+	mr, err := s.readMetadataFromLookupTable(int64(s.superblock.IDTable), int64(id), 4)
+	if err != nil && ler.Err == nil {
+		ler.Err = err
+	}
+
+	ler.Reader = mr
 	pid := ler.ReadUint32()
 	ler.Reader = r
 
