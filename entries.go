@@ -63,6 +63,8 @@ const (
 	inodeExtSock      = 14
 
 	fieldDisabled = 0xffffffff
+
+	idLength = 4
 )
 
 type dirIndex struct {
@@ -592,13 +594,8 @@ func (s *SquashFS) getID(ler *byteio.StickyLittleEndianReader) uint32 {
 		return 0
 	}
 
-	const (
-		idPosShift = 2
-		idLength   = 4
-	)
-
 	r := ler.Reader
-	mr, err := s.readMetadataFromLookupTable(int64(s.superblock.IDTable), int64(id), 4)
+	mr, err := s.readMetadataFromLookupTable(int64(s.superblock.IDTable), int64(id), idLength)
 	if err != nil && ler.Err == nil {
 		ler.Err = err
 	}
