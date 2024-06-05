@@ -28,6 +28,10 @@ const (
 	lzoDefaultCompressionLevel = 8
 
 	maxDictionarySize = 8192
+
+	maxZStdCompressionLevel = 22
+
+	maxFilters = 63
 )
 
 type Compressor uint16
@@ -245,8 +249,6 @@ func parseXZOptions(ler *byteio.StickyLittleEndianReader) (*XZOptions, error) {
 		return nil, ErrInvalidDictionarySize
 	}
 
-	const maxFilters = 63
-
 	filters := ler.ReadUint32()
 	if filters > maxFilters {
 		return nil, ErrInvalidFilters
@@ -324,8 +326,6 @@ type ZStdOptions struct {
 }
 
 func parseZStdOptions(ler *byteio.StickyLittleEndianReader) (*ZStdOptions, error) {
-	const maxZStdCompressionLevel = 22
-
 	compressionlevel := ler.ReadUint32()
 	if compressionlevel == 0 || compressionlevel > maxZStdCompressionLevel {
 		return nil, ErrInvalidCompressionLevel
