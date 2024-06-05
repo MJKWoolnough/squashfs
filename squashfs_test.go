@@ -414,13 +414,64 @@ func TestStat(t *testing.T) {
 
 				return nil
 			},
+			func(sfs *SquashFS) error {
+				stats, err := sfs.Stat("dirA")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
+
+				dir, ok := stats.(dirStat)
+				if !ok {
+					return fmt.Errorf("expecting dir type, got: %t", stats)
+				}
+
+				if dir.uid != 0 || dir.gid != 0 {
+					return fmt.Errorf("expecting uid %d and gid %d, got %d and %d", 0, 0, dir.uid, dir.gid)
+				}
+
+				return nil
+			},
+			func(sfs *SquashFS) error {
+				stats, err := sfs.Stat("dirB/fileA")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
+
+				file, ok := stats.(fileStat)
+				if !ok {
+					return fmt.Errorf("expecting dir type, got: %t", stats)
+				}
+
+				if file.uid != 1000 || file.gid != 1000 {
+					return fmt.Errorf("expecting uid %d and gid %d, got %d and %d", 1000, 1000, file.uid, file.gid)
+				}
+
+				return nil
+			},
+			func(sfs *SquashFS) error {
+				stats, err := sfs.Stat("dirC/fileB")
+				if err != nil {
+					return fmt.Errorf("unexpected error stat'ing file: %w", err)
+				}
+
+				file, ok := stats.(fileStat)
+				if !ok {
+					return fmt.Errorf("expecting dir type, got: %t", stats)
+				}
+
+				if file.uid != 123 || file.gid != 456 {
+					return fmt.Errorf("expecting uid %d and gid %d, got %d and %d", 123, 456, file.uid, file.gid)
+				}
+
+				return nil
+			},
 		},
 		dirData("dirA", []child{}, chmod(0o555)),
 		dirData("dirB", []child{
-			fileData("fileA", contentsA, chmod(0o600), modtime(timestamp)),
+			fileData("fileA", contentsA, chmod(0o600), modtime(timestamp), owner(1000, 1000)),
 		}),
 		dirData("dirC", []child{
-			fileData("fileB", contentsA, chmod(0o123)),
+			fileData("fileB", contentsA, chmod(0o123), owner(123, 456)),
 			symlink("fileC", "fileB", chmod(0o321)),
 		}),
 		dirData("dirD", []child{
