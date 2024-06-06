@@ -138,7 +138,6 @@ func (b *Builder) File(p string, r io.Reader, options ...InodeOption) error {
 	defer b.mu.Unlock()
 
 	start := uint64(b.blockWriter.Pos())
-
 	sr := rwcount.Reader{Reader: r}
 
 	sizes, err := b.blockWriter.WriteFile(&sr)
