@@ -149,6 +149,10 @@ func (d dirStat) Info() (fs.FileInfo, error) {
 	return d, nil
 }
 
+func (d dirStat) String() string {
+	return fs.FormatFileInfo(d)
+}
+
 func (d dirStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
 	if d.xattrIndex != fieldDisabled || len(d.index) > 0 || d.fileSize > 0xffff {
 		d.writeExtTo(lew)
@@ -257,6 +261,10 @@ func (f fileStat) Info() (fs.FileInfo, error) {
 	return f, nil
 }
 
+func (f fileStat) String() string {
+	return fs.FormatFileInfo(f)
+}
+
 func (f fileStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
 	if f.blocksStart > 0xffffffff || f.fileSize > 0xffffffff || f.linkCount > 0 || f.xattrIndex != fieldDisabled || f.sparse > 0 {
 		f.writeExtTo(lew)
@@ -327,6 +335,10 @@ func (s symlinkStat) Sys() any {
 	return s
 }
 
+func (s symlinkStat) String() string {
+	return fs.FormatFileInfo(s)
+}
+
 func (s symlinkStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
 	if s.xattrIndex != fieldDisabled {
 		s.writeExtTo(lew)
@@ -383,6 +395,10 @@ func (b blockStat) Sys() any {
 	return b
 }
 
+func (b blockStat) String() string {
+	return fs.FormatFileInfo(b)
+}
+
 func (b blockStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
 	if b.xattrIndex != fieldDisabled {
 		b.writeExtTo(lew)
@@ -414,6 +430,10 @@ func (c charStat) Mode() fs.FileMode {
 
 func (c charStat) Sys() any {
 	return c
+}
+
+func (c charStat) String() string {
+	return fs.FormatFileInfo(c)
 }
 
 func (c charStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
@@ -469,6 +489,10 @@ func (f fifoStat) Sys() any {
 	return f
 }
 
+func (f fifoStat) String() string {
+	return fs.FormatFileInfo(f)
+}
+
 func (f fifoStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
 	if f.xattrIndex != fieldDisabled {
 		f.writeExtTo(lew)
@@ -498,6 +522,10 @@ func (s socketStat) Mode() fs.FileMode {
 
 func (s socketStat) Sys() any {
 	return s
+}
+
+func (s socketStat) String() string {
+	return fs.FormatFileInfo(s)
 }
 
 func (s socketStat) writeTo(lew *byteio.StickyLittleEndianWriter) {
