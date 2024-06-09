@@ -168,3 +168,7 @@ func (d dirEntry) Type() fs.FileMode {
 func (d dirEntry) Info() (fs.FileInfo, error) {
 	return d.squashfs.getEntry(d.ptr, d.name)
 }
+
+func (d dirEntry) String() string {
+	return fs.FormatDirEntry(d)
+}
