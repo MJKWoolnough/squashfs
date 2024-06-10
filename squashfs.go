@@ -91,6 +91,28 @@ func (s *SquashFS) readFile(name string) ([]byte, error) {
 	return buf, nil
 }
 
+func (s *SquashFS) ReadLink(name string) (string, error) {
+	fi, err := s.resolve(name, false)
+	if err != nil {
+		return "", &fs.PathError{
+			Op:   "readlink",
+			Path: name,
+			Err:  err,
+		}
+	}
+
+	sym, ok := fi.(symlinkStat)
+	if !ok {
+		return "", &fs.PathError{
+			Op:   "readlink",
+			Path: name,
+			Err:  fs.ErrInvalid,
+		}
+	}
+
+	return sym.targetPath, nil
+}
+
 // ReadDir returns a sorted list of directory entries for the named directory.
 func (s *SquashFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	de, err := s.readDir(name)
