@@ -1,6 +1,7 @@
 package squashfs
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -543,5 +544,66 @@ func TestReadDir(t *testing.T) {
 			fileData("childB", ""),
 			symlink("childC", "childB"),
 		}, chmod(0o432)),
+	)
+}
+
+func TestReadlink(t *testing.T) {
+	test(
+		t,
+		false,
+		[]testFn{
+			func(sfs *SquashFS) error {
+				sym, err := sfs.ReadLink("childA")
+				if !errors.Is(err, fs.ErrInvalid) {
+					return fmt.Errorf("expecting error fs.ErrInvalid, got %s", err)
+				} else if sym != "" {
+					return fmt.Errorf("expecting an empty string, got %q", sym)
+				}
+
+				return nil
+			},
+			func(sfs *SquashFS) error {
+				const expected = "childA"
+
+				sym, err := sfs.ReadLink("symB")
+				if err != nil {
+					return fmt.Errorf("got unexpected error: %s", err)
+				} else if sym != expected {
+					return fmt.Errorf("expecting an %s, got %q", expected, sym)
+				}
+
+				return nil
+			},
+			func(sfs *SquashFS) error {
+				const expected = "/not/exist"
+
+				sym, err := sfs.ReadLink("symC")
+				if err != nil {
+					return fmt.Errorf("got unexpected error: %s", err)
+				} else if sym != expected {
+					return fmt.Errorf("expecting an %s, got %q", expected, sym)
+				}
+
+				return nil
+			},
+			func(sfs *SquashFS) error {
+				const expected = "symE"
+
+				sym, err := sfs.ReadLink("dirD/symE")
+				if err != nil {
+					return fmt.Errorf("got unexpected error: %s", err)
+				} else if sym != expected {
+					return fmt.Errorf("expecting an %s, got %q", expected, sym)
+				}
+
+				return nil
+			},
+		},
+		fileData("childA", ""),
+		symlink("symB", "childA"),
+		symlink("symC", "/not/exist"),
+		dirData("dirD", []child{
+			symlink("symE", "symE"),
+		}),
 	)
 }
